@@ -29,6 +29,23 @@ impl IdGen {
 pub struct Player {
     pub id: Id,
     pub position: Vec2<f32>,
+    pub velocity: Vec2<f32>,
+    pub size: Vec2<f32>,
+}
+
+impl Player {
+    pub fn matrix(&self) -> Mat4<f32> {
+        Mat4::translate(self.position.extend(0.0))
+            * Mat4::scale(vec3(self.size.x, self.size.y, 1.0))
+    }
+    pub fn tiles(&self) -> impl Iterator<Item = Vec2<i32>> + '_ {
+        (self.position.x.floor() as i32..(self.position.x + self.size.x).ceil() as i32).flat_map(
+            move |x| {
+                (self.position.y.floor() as i32..(self.position.y + self.size.y).ceil() as i32)
+                    .map(move |y| vec2(x, y))
+            },
+        )
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -67,6 +84,8 @@ impl Model {
         let player = Player {
             id: player_id,
             position: vec2(0.0, 0.0),
+            velocity: vec2(0.0, 0.0),
+            size: vec2(0.5, 0.5),
         };
         let events = vec![Event::PlayerJoined(player.clone())];
         self.players.insert(player_id, player);
