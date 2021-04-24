@@ -59,6 +59,7 @@ impl GameState {
 
 impl geng::State for GameState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        self.camera.center = self.player.position;
         ugli::clear(framebuffer, Some(Color::rgb(0.8, 0.8, 1.0)), None);
         const RADIUS: i32 = 10;
         for x in self.player.position.x as i32 - RADIUS..=self.player.position.x as i32 + RADIUS {
