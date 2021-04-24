@@ -8,7 +8,8 @@ pub struct GameState {
     model: Model,
     player: Player,
     connection: Connection,
-    click: Option<Vec2<f32>>,
+    left_click: Option<Vec2<f32>>,
+    right_click: Option<Vec2<f32>>,
     transition: Option<geng::Transition>,
 }
 
@@ -28,7 +29,8 @@ impl GameState {
             player,
             model: welcome.model,
             connection,
-            click: None,
+            left_click: None,
+            right_click: None,
             transition: None,
         }
     }
@@ -83,12 +85,24 @@ impl geng::State for GameState {
             .window()
             .is_button_pressed(geng::MouseButton::Left)
         {
-            self.click = Some(self.camera.screen_to_world(
+            self.left_click = Some(self.camera.screen_to_world(
                 framebuffer,
                 self.geng.window().mouse_pos().map(|x| x as f32),
             ));
         } else {
-            self.click = None;
+            self.left_click = None;
+        }
+        if self
+            .geng
+            .window()
+            .is_button_pressed(geng::MouseButton::Right)
+        {
+            self.right_click = Some(self.camera.screen_to_world(
+                framebuffer,
+                self.geng.window().mouse_pos().map(|x| x as f32),
+            ));
+        } else {
+            self.right_click = None;
         }
     }
     fn update(&mut self, delta_time: f64) {
@@ -108,9 +122,15 @@ impl geng::State for GameState {
             messages_to_send.push(ClientMessage::Update {
                 position: self.player.position,
             });
-            if let Some(position) = self.click {
+            if let Some(position) = self.left_click {
                 messages_to_send.push(ClientMessage::Event(Event::TileBroken(
                     position.map(|x| x.floor() as i32),
+                )));
+            }
+            if let Some(position) = self.right_click {
+                messages_to_send.push(ClientMessage::Event(Event::TilePlaced(
+                    position.map(|x| x.floor() as i32),
+                    Tile::Stone,
                 )));
             }
         }

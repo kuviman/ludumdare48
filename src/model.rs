@@ -124,6 +124,11 @@ impl Model {
             Event::TileBroken(position) => {
                 self.tiles.remove(&position);
             }
+            Event::TilePlaced(position, tile) => {
+                if !self.tiles.contains_key(&position) {
+                    self.tiles.insert(position, tile);
+                }
+            }
         }
     }
 }
@@ -134,4 +139,5 @@ pub enum Event {
     PlayerUpdated(Player),
     PlayerLeft(Id),
     TileBroken(Vec2<i32>),
+    TilePlaced(Vec2<i32>, Tile),
 }
