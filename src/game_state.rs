@@ -34,12 +34,76 @@ impl GameState {
             transition: None,
         }
     }
-    fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player) {
+    fn draw_player_part(
+        &self,
+        framebuffer: &mut ugli::Framebuffer,
+        player: &Player,
+        texture: &ugli::Texture,
+        position: Vec2<f32>,
+        flip_x: bool,
+        rotation: f32,
+    ) {
         self.renderer.draw(
             framebuffer,
             &self.camera,
-            player.matrix(),
-            &self.assets.player,
+            player.matrix()
+                * Mat4::translate(vec3(-1.0, -1.0, 0.0))
+                * Mat4::scale_uniform(3.0)
+                * Mat4::translate(vec3(0.5, 0.5, 0.0))
+                * Mat4::rotate_z(rotation)
+                * Mat4::scale(vec3(if flip_x { -1.0 } else { 1.0 }, 1.0, 1.0))
+                * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
+            texture,
+        );
+    }
+    fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player) {
+        self.draw_player_part(
+            framebuffer,
+            player,
+            &self.assets.stick,
+            vec2(0.0, 0.0),
+            false,
+            0.0,
+        );
+        self.draw_player_part(
+            framebuffer,
+            player,
+            &self.assets.pick_head,
+            vec2(0.0, 0.0),
+            false,
+            0.0,
+        );
+        self.draw_player_part(
+            framebuffer,
+            player,
+            &self.assets.body,
+            vec2(0.0, 0.0),
+            false,
+            0.0,
+        );
+        self.draw_player_part(
+            framebuffer,
+            player,
+            &self.assets.leg,
+            vec2(0.0, 0.0),
+            false,
+            0.0,
+        );
+        self.draw_player_part(
+            framebuffer,
+            player,
+            &self.assets.leg,
+            vec2(0.0, 0.0),
+            true,
+            0.0,
+        );
+        self.draw_player_part(
+            framebuffer,
+            player,
+            &self.assets.eyes,
+            vec2(0.0, 0.0),
+            false,
+            0.0,
         );
     }
     fn draw_tile(
