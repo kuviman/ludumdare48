@@ -6,6 +6,7 @@ pub mod lobby;
 pub mod model;
 pub mod net;
 pub mod renderer;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod server;
 
 pub use camera::*;
@@ -14,6 +15,7 @@ pub use lobby::Lobby;
 pub use model::*;
 pub use net::*;
 pub use renderer::*;
+#[cfg(not(target_arch = "wasm32"))]
 pub use server::Server;
 
 #[derive(geng::Assets)]
@@ -46,8 +48,10 @@ fn main() {
     }
     let opt: Opt = StructOpt::from_args();
     if opt.server {
+        #[cfg(not(target_arch = "wasm32"))]
         Server::new(SERVER_ADDR, Model::new()).run();
     } else {
+        #[cfg(not(target_arch = "wasm32"))]
         let server = if opt.with_server {
             let server = Server::new(SERVER_ADDR, Model::new());
             let server_handle = server.handle();
@@ -73,6 +77,7 @@ fn main() {
                 }
             }),
         );
+        #[cfg(not(target_arch = "wasm32"))]
         if let Some((server_handle, server_thread)) = server {
             server_handle.shutdown();
             server_thread.join().unwrap();
