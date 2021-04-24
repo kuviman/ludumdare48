@@ -32,10 +32,16 @@ pub struct Player {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum Tile {
+    Stone,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Model {
     id_gen: IdGen,
     pub ticks_per_second: f64,
     pub players: HashMap<Id, Player>,
+    pub tiles: HashMap<Vec2<i32>, Tile>,
 }
 
 impl Model {
@@ -44,6 +50,15 @@ impl Model {
             id_gen: IdGen::new(),
             ticks_per_second: 20.0,
             players: default(),
+            tiles: {
+                let mut tiles = HashMap::new();
+                for x in -100..=100 {
+                    for y in -100..0 {
+                        tiles.insert(vec2(x, y), Tile::Stone);
+                    }
+                }
+                tiles
+            },
         }
     }
     #[must_use]
