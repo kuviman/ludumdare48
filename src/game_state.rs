@@ -33,6 +33,7 @@ pub struct GameState {
     left_click: Option<Vec2<f32>>,
     right_click: Option<Vec2<f32>>,
     transition: Option<geng::Transition>,
+    to_send: Vec<ClientMessage>,
 }
 
 impl GameState {
@@ -55,6 +56,7 @@ impl GameState {
             left_click: None,
             right_click: None,
             transition: None,
+            to_send: Vec::new(),
         }
     }
     fn draw_player_part(
@@ -92,21 +94,27 @@ impl GameState {
             leg_amp = 0.0;
             leg_offset = -0.1;
         }
+        let mut pick_position = vec2(0.0, 0.0);
+        let mut pick_rotation = f32::PI / 4.0;
+        if let Some(swing) = player.swing {
+            pick_rotation = swing * f32::PI * 2.0 + f32::PI;
+            pick_position = Vec2::rotated(vec2(1.0, 0.0), pick_rotation);
+        }
         self.draw_player_part(
             framebuffer,
             player,
             &self.assets.stick,
-            vec2(0.0, 0.0),
+            pick_position,
             false,
-            0.0,
+            pick_rotation - f32::PI / 4.0,
         );
         self.draw_player_part(
             framebuffer,
             player,
             &self.assets.pick_head,
-            vec2(0.0, 0.0),
+            pick_position,
             false,
-            0.0,
+            pick_rotation - f32::PI / 4.0,
         );
         self.draw_player_part(
             framebuffer,
@@ -156,6 +164,36 @@ impl GameState {
             Mat4::translate(position.map(|x| x as f32).extend(0.0)),
             &texture,
         );
+    }
+    fn update_player(&mut self, delta_time: f32) {
+        self.player.target_velocity = vec2(0.0, 0.0);
+        if self.geng.window().is_key_pressed(geng::Key::A) {
+            self.player.target_velocity.x -= 1.0;
+        }
+        if self.geng.window().is_key_pressed(geng::Key::D) {
+            self.player.target_velocity.x += 1.0;
+        }
+        if self.geng.window().is_key_pressed(geng::Key::W) {
+            self.player.target_velocity.y += 1.0;
+        }
+        if self.geng.window().is_key_pressed(geng::Key::S) {
+            self.player.target_velocity.y -= 1.0;
+        }
+        self.player.update(&self.model.tiles, delta_time);
+        if let Some(position) = self.left_click {
+            let position = position.map(|x| x.floor() as i32);
+            match self.player.swing {
+                None => self.player.swing = Some(0.0),
+                Some(swing) if swing > 1.0 => {
+                    self.to_send
+                        .push(ClientMessage::Event(Event::TileBroken(position)));
+                    self.player.swing = Some(0.0);
+                }
+                _ => {}
+            }
+        } else {
+            self.player.swing = None;
+        }
     }
 }
 
@@ -221,16 +259,11 @@ impl geng::State for GameState {
                 }
             }
         }
-        let mut messages_to_send = Vec::new();
+        let mut messages_to_send = mem::replace(&mut self.to_send, Vec::new());
         if !messages.is_empty() {
-            messages_to_send.push(ClientMessage::Update {
-                position: self.player.position,
-            });
-            if let Some(position) = self.left_click {
-                messages_to_send.push(ClientMessage::Event(Event::TileBroken(
-                    position.map(|x| x.floor() as i32),
-                )));
-            }
+            messages_to_send.push(ClientMessage::Event(Event::PlayerUpdated(
+                self.player.clone(),
+            )));
             if let Some(position) = self.right_click {
                 messages_to_send.push(ClientMessage::Event(Event::TilePlaced(
                     position.map(|x| x.floor() as i32),
@@ -262,20 +295,8 @@ impl geng::State for GameState {
             }
         }
         let delta_time = delta_time as f32;
-        self.player.target_velocity = vec2(0.0, 0.0);
-        if self.geng.window().is_key_pressed(geng::Key::A) {
-            self.player.target_velocity.x -= 1.0;
-        }
-        if self.geng.window().is_key_pressed(geng::Key::D) {
-            self.player.target_velocity.x += 1.0;
-        }
-        if self.geng.window().is_key_pressed(geng::Key::W) {
-            self.player.target_velocity.y += 1.0;
-        }
-        if self.geng.window().is_key_pressed(geng::Key::S) {
-            self.player.target_velocity.y -= 1.0;
-        }
-        self.player.update(&self.model.tiles, delta_time);
+        self.update_player(delta_time);
+
         for player in self.model.players.values() {
             if player.id == self.player.id {
                 continue;

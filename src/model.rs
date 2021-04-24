@@ -34,12 +34,14 @@ pub struct Player {
     pub jump_timer: f32,
     pub on_ground: bool,
     pub looks_right: bool,
+    pub swing: Option<f32>,
 }
 
 impl Player {
     pub const SPEED: f32 = 3.0;
     pub const JUMP_SPEED: f32 = 4.0;
     pub const JUMP_TIME: f32 = 0.3;
+    pub const SWING_SPEED: f32 = 2.0;
     pub fn new(id_gen: &mut IdGen) -> Self {
         Self {
             id: id_gen.gen(),
@@ -49,6 +51,7 @@ impl Player {
             jump_timer: 0.0,
             on_ground: false,
             looks_right: true,
+            swing: None,
         }
     }
     pub fn matrix(&self) -> Mat4<f32> {
@@ -106,6 +109,9 @@ impl Player {
         }
         if self.position.x > initial_position.x {
             self.looks_right = true;
+        }
+        if let Some(swing) = &mut self.swing {
+            *swing += delta_time * Self::SWING_SPEED;
         }
     }
     fn collide(&self, tiles: &TileMap, consider_climbable: bool) -> bool {
@@ -204,10 +210,6 @@ impl Model {
     ) -> Vec<Event> {
         let mut events = Vec::new();
         match message {
-            ClientMessage::Update { position } => {
-                self.players.get_mut(&player_id).unwrap().position = position;
-                events.push(Event::PlayerUpdated(self.players[&player_id].clone()));
-            }
             ClientMessage::Event(event) => {
                 self.handle(event.clone());
                 events.push(event);
