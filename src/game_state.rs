@@ -179,6 +179,7 @@ impl geng::State for GameState {
         if self.geng.window().is_key_pressed(geng::Key::S) {
             self.player.velocity.y -= 1.0;
         }
+        self.player.velocity *= Player::SPEED;
         let mut player = self.player.clone();
         player.position.x += player.velocity.x * delta_time;
         if self.collide(&player) {

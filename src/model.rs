@@ -34,6 +34,7 @@ pub struct Player {
 }
 
 impl Player {
+    pub const SPEED: f32 = 3.0;
     pub fn matrix(&self) -> Mat4<f32> {
         Mat4::translate(self.position.extend(0.0))
             * Mat4::scale(vec3(self.size.x, self.size.y, 1.0))
