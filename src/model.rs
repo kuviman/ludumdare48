@@ -80,6 +80,8 @@ impl Player {
         if self.collide(tiles) {
             if self.position.y < initial_position.y {
                 self.jump_timer = Self::JUMP_TIME;
+            } else {
+                self.jump_timer = 0.0;
             }
             self.position.y = initial_position.y;
         }
