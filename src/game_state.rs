@@ -2,6 +2,9 @@ use super::*;
 
 pub struct GameState {
     geng: Rc<Geng>,
+    assets: Rc<Assets>,
+    camera: Camera,
+    renderer: Renderer,
     model: Model,
     player: Player,
     connection: Connection,
@@ -9,31 +12,43 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new(geng: &Rc<Geng>, welcome: WelcomeMessage, connection: Connection) -> Self {
+    pub fn new(
+        geng: &Rc<Geng>,
+        assets: &Rc<Assets>,
+        welcome: WelcomeMessage,
+        connection: Connection,
+    ) -> Self {
         let player = welcome.model.players[&welcome.player_id].clone();
         Self {
             geng: geng.clone(),
+            assets: assets.clone(),
+            camera: Camera::new(10.0),
+            renderer: Renderer::new(geng),
             player,
             model: welcome.model,
             connection,
             transition: None,
         }
     }
+    fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player) {
+        self.renderer.draw(
+            framebuffer,
+            &self.camera,
+            Mat4::translate(player.position.extend(0.0)) * Mat4::scale_uniform(0.5),
+            &self.assets.player,
+        );
+    }
 }
 
 impl geng::State for GameState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         ugli::clear(framebuffer, Some(Color::rgb(0.8, 0.8, 1.0)), None);
-        self.geng
-            .draw_2d()
-            .circle(framebuffer, self.player.position, 10.0, Color::RED);
+        self.draw_player(framebuffer, &self.player);
         for player in self.model.players.values() {
             if player.id == self.player.id {
                 continue;
             }
-            self.geng
-                .draw_2d()
-                .circle(framebuffer, player.position, 10.0, Color::RED);
+            self.draw_player(framebuffer, player);
         }
     }
     fn update(&mut self, delta_time: f64) {
@@ -82,7 +97,7 @@ impl geng::State for GameState {
         if self.geng.window().is_key_pressed(geng::Key::D) {
             velocity.x += 1.0;
         }
-        velocity *= 100.0;
+        // velocity *= 100.0;
         self.player.position += velocity * delta_time;
     }
     fn handle_event(&mut self, event: geng::Event) {

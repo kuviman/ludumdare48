@@ -1,20 +1,25 @@
 use geng::prelude::*;
 
+pub mod camera;
 pub mod game_state;
 pub mod lobby;
 pub mod model;
 pub mod net;
+pub mod renderer;
 pub mod server;
 
+pub use camera::*;
 pub use game_state::GameState;
 pub use lobby::Lobby;
 pub use model::*;
 pub use net::*;
+pub use renderer::*;
 pub use server::Server;
 
 #[derive(geng::Assets)]
 pub struct Assets {
-    art: ugli::Texture,
+    pub art: ugli::Texture,
+    pub player: ugli::Texture,
 }
 
 #[derive(StructOpt)]

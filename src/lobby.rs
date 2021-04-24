@@ -29,6 +29,7 @@ impl geng::State for Lobby {
                     let (welcome, _) = model.welcome();
                     self.transition = Some(geng::Transition::Push(Box::new(GameState::new(
                         &self.geng,
+                        &self.assets,
                         welcome,
                         Connection::Local {
                             next_tick: 0.0,
@@ -39,6 +40,7 @@ impl geng::State for Lobby {
                 geng::Key::Num2 => {
                     self.transition = Some(geng::Transition::Push(Box::new(ConnectingState::new(
                         &self.geng,
+                        &self.assets,
                     ))));
                 }
                 _ => {}
@@ -53,12 +55,13 @@ impl geng::State for Lobby {
 
 pub struct ConnectingState {
     geng: Rc<Geng>,
+    assets: Rc<Assets>,
     connection: Option<Pin<Box<dyn Future<Output = (WelcomeMessage, Connection)>>>>,
     transition: Option<geng::Transition>,
 }
 
 impl ConnectingState {
-    pub fn new(geng: &Rc<Geng>) -> Self {
+    pub fn new(geng: &Rc<Geng>, assets: &Rc<Assets>) -> Self {
         let addr = format!("{}://{}", option_env!("WSS").unwrap_or("ws"), SERVER_ADDR);
         let connection = Box::pin(
             geng::net::client::connect(&addr)
@@ -74,6 +77,7 @@ impl ConnectingState {
         );
         Self {
             geng: geng.clone(),
+            assets: assets.clone(),
             connection: Some(connection),
             transition: None,
         }
@@ -106,7 +110,10 @@ impl geng::State for ConnectingState {
                     ))
             {
                 return Some(geng::Transition::Switch(Box::new(GameState::new(
-                    &self.geng, welcome, connection,
+                    &self.geng,
+                    &self.assets,
+                    welcome,
+                    connection,
                 ))));
             }
         }
