@@ -69,6 +69,7 @@ impl geng::State for GameState {
                 if let Some(tile) = self.model.tiles.get(&position) {
                     let texture = match tile {
                         Tile::Stone => &self.assets.stone,
+                        Tile::Ladder => &self.assets.ladder,
                     };
                     self.draw_tile(framebuffer, position, texture);
                 }
@@ -131,7 +132,7 @@ impl geng::State for GameState {
             if let Some(position) = self.right_click {
                 messages_to_send.push(ClientMessage::Event(Event::TilePlaced(
                     position.map(|x| x.floor() as i32),
-                    Tile::Stone,
+                    Tile::Ladder,
                 )));
             }
         }

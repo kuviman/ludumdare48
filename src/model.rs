@@ -73,11 +73,14 @@ impl Player {
         self.jump_timer -= delta_time;
         let delta_position = velocity * delta_time;
         self.position.x += delta_position.x;
-        if self.collide(tiles) {
+        if self.collide(tiles, false) {
             self.position.x = initial_position.x;
         }
         self.position.y += delta_position.y;
-        if self.collide(tiles) {
+        if self.collide(
+            tiles,
+            self.position.y < initial_position.y && self.target_velocity.y >= 0.0,
+        ) {
             if self.position.y < initial_position.y {
                 self.jump_timer = Self::JUMP_TIME;
             } else {
@@ -86,10 +89,15 @@ impl Player {
             self.position.y = initial_position.y;
         }
     }
-    fn collide(&self, tiles: &TileMap) -> bool {
+    fn collide(&self, tiles: &TileMap, consider_climbable: bool) -> bool {
         for position in self.tiles() {
-            if tiles.contains_key(&position) {
-                return true;
+            if let Some(tile) = tiles.get(&position) {
+                if !tile.can_move_through() {
+                    return true;
+                }
+                if consider_climbable && tile.can_climb() {
+                    return true;
+                }
             }
         }
         false
@@ -99,6 +107,22 @@ impl Player {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Tile {
     Stone,
+    Ladder,
+}
+
+impl Tile {
+    pub fn can_move_through(&self) -> bool {
+        match self {
+            Self::Stone => false,
+            Self::Ladder => true,
+        }
+    }
+    pub fn can_climb(&self) -> bool {
+        match self {
+            Self::Ladder => true,
+            _ => false,
+        }
+    }
 }
 
 pub type TileMap = HashMap<Vec2<i32>, Tile>;

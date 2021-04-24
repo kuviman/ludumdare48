@@ -23,6 +23,7 @@ pub struct Assets {
     pub art: ugli::Texture,
     pub player: ugli::Texture,
     pub stone: ugli::Texture,
+    pub ladder: ugli::Texture,
 }
 
 #[derive(StructOpt)]
