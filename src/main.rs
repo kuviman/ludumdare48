@@ -1,30 +1,28 @@
 use geng::prelude::*;
 
+pub mod game_state;
+pub mod lobby;
+pub mod model;
+pub mod net;
+pub mod server;
+
+pub use game_state::GameState;
+pub use lobby::Lobby;
+pub use model::*;
+pub use net::*;
+pub use server::Server;
+
 #[derive(geng::Assets)]
 pub struct Assets {
     art: ugli::Texture,
 }
 
-struct GameState {
-    geng: Rc<Geng>,
-    assets: Rc<Assets>,
-}
-
-impl GameState {
-    pub fn new(geng: &Rc<Geng>, assets: Rc<Assets>) -> Self {
-        Self {
-            geng: geng.clone(),
-            assets,
-        }
-    }
-}
-
-impl geng::State for GameState {
-    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        ugli::clear(framebuffer, Some(Color::rgb(0.8, 0.8, 1.0)), None);
-    }
-    fn update(&mut self, delta_time: f64) {}
-    fn handle_event(&mut self, event: geng::Event) {}
+#[derive(StructOpt)]
+struct Opt {
+    #[structopt(long)]
+    server: bool,
+    #[structopt(long)]
+    with_server: bool,
 }
 
 fn main() {
@@ -40,19 +38,38 @@ fn main() {
             }
         }
     }
-    let geng = Rc::new(Geng::new(geng::ContextOptions {
-        title: "LudumDare 48 - TODO by kuviman".to_owned(),
-        ..default()
-    }));
-    let assets = <Assets as geng::LoadAsset>::load(&geng, ".");
-    geng::run(
-        geng.clone(),
-        geng::LoadingScreen::new(&geng, geng::EmptyLoadingScreen, assets, {
-            let geng = geng.clone();
-            move |assets| {
-                let assets = assets.unwrap();
-                GameState::new(&geng, Rc::new(assets))
-            }
-        }),
-    );
+    let opt: Opt = StructOpt::from_args();
+    if opt.server {
+        Server::new(SERVER_ADDR, Model::new()).run();
+    } else {
+        let server = if opt.with_server {
+            let server = Server::new(SERVER_ADDR, Model::new());
+            let server_handle = server.handle();
+            let server_thread = std::thread::spawn(move || {
+                server.run();
+            });
+            Some((server_handle, server_thread))
+        } else {
+            None
+        };
+        let geng = Rc::new(Geng::new(geng::ContextOptions {
+            title: "LudumDare 48 - TODO by kuviman".to_owned(),
+            ..default()
+        }));
+        let assets = <Assets as geng::LoadAsset>::load(&geng, ".");
+        geng::run(
+            geng.clone(),
+            geng::LoadingScreen::new(&geng, geng::EmptyLoadingScreen, assets, {
+                let geng = geng.clone();
+                move |assets| {
+                    let assets = assets.unwrap();
+                    Lobby::new(&geng, Rc::new(assets))
+                }
+            }),
+        );
+        if let Some((server_handle, server_thread)) = server {
+            server_handle.shutdown();
+            server_thread.join().unwrap();
+        }
+    }
 }

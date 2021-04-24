@@ -6,3 +6,5 @@ edition = "2018"
 
 [dependencies]
 geng = "0.8.0-alpha"
+structopt = "0.3"
+serde = "1"
