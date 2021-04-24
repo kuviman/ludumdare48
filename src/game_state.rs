@@ -1,5 +1,26 @@
 use super::*;
 
+struct PlayerState {
+    step_animation: f32,
+}
+
+impl PlayerState {
+    pub fn new() -> Self {
+        Self {
+            step_animation: 0.0,
+        }
+    }
+    pub fn update(&mut self, player: &Player, delta_time: f32) {
+        self.step_animation += player.target_velocity.len() * delta_time;
+    }
+}
+
+impl Default for PlayerState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct GameState {
     geng: Rc<Geng>,
     assets: Rc<Assets>,
@@ -7,6 +28,7 @@ pub struct GameState {
     renderer: Renderer,
     model: Model,
     player: Player,
+    players: HashMap<Id, PlayerState>,
     connection: Connection,
     left_click: Option<Vec2<f32>>,
     right_click: Option<Vec2<f32>>,
@@ -27,6 +49,7 @@ impl GameState {
             camera: Camera::new(10.0),
             renderer: Renderer::new(geng),
             player,
+            players: HashMap::new(),
             model: welcome.model,
             connection,
             left_click: None,
@@ -47,7 +70,7 @@ impl GameState {
             framebuffer,
             &self.camera,
             player.matrix()
-                * Mat4::translate(vec3(-1.0, -1.0, 0.0))
+                * Mat4::translate(vec3(-1.0, -1.0, 0.0) + position.extend(0.0))
                 * Mat4::scale_uniform(3.0)
                 * Mat4::translate(vec3(0.5, 0.5, 0.0))
                 * Mat4::rotate_z(rotation)
@@ -57,6 +80,18 @@ impl GameState {
         );
     }
     fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player) {
+        let state = if let Some(state) = self.players.get(&player.id) {
+            state
+        } else {
+            return;
+        };
+        let leg_arg = state.step_animation * f32::PI * 2.0 * 5.0;
+        let mut leg_amp = player.target_velocity.len().min(1.0) * 0.1;
+        let mut leg_offset = 0.0;
+        if !player.on_ground {
+            leg_amp = 0.0;
+            leg_offset = -0.1;
+        }
         self.draw_player_part(
             framebuffer,
             player,
@@ -76,6 +111,17 @@ impl GameState {
         self.draw_player_part(
             framebuffer,
             player,
+            &self.assets.leg,
+            vec2(
+                0.0,
+                (leg_arg + f32::PI).sin().max(0.0) * leg_amp + leg_offset,
+            ),
+            true,
+            0.0,
+        );
+        self.draw_player_part(
+            framebuffer,
+            player,
             &self.assets.body,
             vec2(0.0, 0.0),
             false,
@@ -85,16 +131,8 @@ impl GameState {
             framebuffer,
             player,
             &self.assets.leg,
-            vec2(0.0, 0.0),
+            vec2(0.0, leg_arg.sin().max(0.0) * leg_amp + leg_offset),
             false,
-            0.0,
-        );
-        self.draw_player_part(
-            framebuffer,
-            player,
-            &self.assets.leg,
-            vec2(0.0, 0.0),
-            true,
             0.0,
         );
         self.draw_player_part(
@@ -238,6 +276,19 @@ impl geng::State for GameState {
             self.player.target_velocity.y -= 1.0;
         }
         self.player.update(&self.model.tiles, delta_time);
+        for player in self.model.players.values() {
+            if player.id == self.player.id {
+                continue;
+            }
+            self.players
+                .entry(player.id)
+                .or_default()
+                .update(player, delta_time);
+        }
+        self.players
+            .entry(self.player.id)
+            .or_default()
+            .update(&self.player, delta_time);
     }
     fn handle_event(&mut self, event: geng::Event) {
         match event {

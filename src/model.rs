@@ -32,6 +32,8 @@ pub struct Player {
     pub target_velocity: Vec2<f32>,
     pub size: Vec2<f32>,
     pub jump_timer: f32,
+    pub on_ground: bool,
+    pub looks_right: bool,
 }
 
 impl Player {
@@ -45,11 +47,17 @@ impl Player {
             target_velocity: vec2(0.0, 0.0),
             size: vec2(0.5, 0.5),
             jump_timer: 0.0,
+            on_ground: false,
+            looks_right: true,
         }
     }
     pub fn matrix(&self) -> Mat4<f32> {
-        Mat4::translate(self.position.extend(0.0))
-            * Mat4::scale(vec3(self.size.x, self.size.y, 1.0))
+        let mut matrix = Mat4::translate(self.position.extend(0.0))
+            * Mat4::scale(vec3(self.size.x, self.size.y, 1.0));
+        if self.looks_right {
+            matrix *= Mat4::scale(vec3(-1.0, 1.0, 1.0)) * Mat4::translate(vec3(-1.0, 0.0, 0.0));
+        }
+        matrix
     }
     pub fn tiles(&self) -> impl Iterator<Item = Vec2<i32>> + '_ {
         (self.position.x.floor() as i32..(self.position.x + self.size.x).ceil() as i32).flat_map(
@@ -77,16 +85,27 @@ impl Player {
             self.position.x = initial_position.x;
         }
         self.position.y += delta_position.y;
+        self.on_ground = false;
         if self.collide(
             tiles,
             self.position.y < initial_position.y && self.target_velocity.y >= 0.0,
         ) {
             if self.position.y < initial_position.y {
                 self.jump_timer = Self::JUMP_TIME;
+                self.on_ground = true;
             } else {
                 self.jump_timer = 0.0;
             }
             self.position.y = initial_position.y;
+        }
+        if self.collide(tiles, true) {
+            self.on_ground = true;
+        }
+        if self.position.x < initial_position.x {
+            self.looks_right = false;
+        }
+        if self.position.x > initial_position.x {
+            self.looks_right = true;
         }
     }
     fn collide(&self, tiles: &TileMap, consider_climbable: bool) -> bool {
