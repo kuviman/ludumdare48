@@ -55,14 +55,6 @@ impl GameState {
             &texture,
         );
     }
-    fn collide(&self, player: &Player) -> bool {
-        for position in player.tiles() {
-            if self.model.tiles.contains_key(&position) {
-                return true;
-            }
-        }
-        false
-    }
 }
 
 impl geng::State for GameState {
@@ -166,30 +158,20 @@ impl geng::State for GameState {
             }
         }
         let delta_time = delta_time as f32;
-        self.player.velocity = vec2(0.0, 0.0);
+        self.player.target_velocity = vec2(0.0, 0.0);
         if self.geng.window().is_key_pressed(geng::Key::A) {
-            self.player.velocity.x -= 1.0;
+            self.player.target_velocity.x -= 1.0;
         }
         if self.geng.window().is_key_pressed(geng::Key::D) {
-            self.player.velocity.x += 1.0;
+            self.player.target_velocity.x += 1.0;
         }
         if self.geng.window().is_key_pressed(geng::Key::W) {
-            self.player.velocity.y += 1.0;
+            self.player.target_velocity.y += 1.0;
         }
         if self.geng.window().is_key_pressed(geng::Key::S) {
-            self.player.velocity.y -= 1.0;
+            self.player.target_velocity.y -= 1.0;
         }
-        self.player.velocity *= Player::SPEED;
-        let mut player = self.player.clone();
-        player.position.x += player.velocity.x * delta_time;
-        if self.collide(&player) {
-            player.position.x = self.player.position.x;
-        }
-        player.position.y += player.velocity.y * delta_time;
-        if self.collide(&player) {
-            player.position.y = self.player.position.y;
-        }
-        self.player = player;
+        self.player.update(&self.model.tiles, delta_time);
     }
     fn handle_event(&mut self, event: geng::Event) {
         match event {
