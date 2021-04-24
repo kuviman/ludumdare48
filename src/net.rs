@@ -5,6 +5,7 @@ pub const SERVER_ADDR: &str = "127.0.0.1:7897";
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ClientMessage {
     Update { position: Vec2<f32> },
+    Event(Event),
 }
 
 #[derive(Debug, Serialize, Deserialize)]

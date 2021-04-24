@@ -8,6 +8,7 @@ pub struct GameState {
     model: Model,
     player: Player,
     connection: Connection,
+    click: Option<Vec2<f32>>,
     transition: Option<geng::Transition>,
 }
 
@@ -27,6 +28,7 @@ impl GameState {
             player,
             model: welcome.model,
             connection,
+            click: None,
             transition: None,
         }
     }
@@ -76,6 +78,18 @@ impl geng::State for GameState {
             }
             self.draw_player(framebuffer, player);
         }
+        if self
+            .geng
+            .window()
+            .is_button_pressed(geng::MouseButton::Left)
+        {
+            self.click = Some(self.camera.screen_to_world(
+                framebuffer,
+                self.geng.window().mouse_pos().map(|x| x as f32),
+            ));
+        } else {
+            self.click = None;
+        }
     }
     fn update(&mut self, delta_time: f64) {
         let mut messages = Vec::new();
@@ -89,10 +103,18 @@ impl geng::State for GameState {
                 }
             }
         }
+        let mut messages_to_send = Vec::new();
         if !messages.is_empty() {
-            let message = ClientMessage::Update {
+            messages_to_send.push(ClientMessage::Update {
                 position: self.player.position,
-            };
+            });
+            if let Some(position) = self.click {
+                messages_to_send.push(ClientMessage::Event(Event::TileBroken(
+                    position.map(|x| x.floor() as i32),
+                )));
+            }
+        }
+        for message in messages_to_send {
             match &mut self.connection {
                 Connection::Remote(connection) => connection.send(message),
                 Connection::Local {

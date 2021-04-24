@@ -67,6 +67,7 @@ impl Drop for Client {
 
 impl geng::net::Receiver<ClientMessage> for Client {
     fn handle(&mut self, message: ClientMessage) {
+        let send_update = matches!(message, ClientMessage::Update { .. });
         let mut server_state = self.server_state.lock().unwrap();
         let events = server_state.model.handle_message(
             self.player_id,
@@ -74,9 +75,11 @@ impl geng::net::Receiver<ClientMessage> for Client {
             // &mut *self.sender
         );
         server_state.add_events(events);
-        self.sender.send(ServerMessage::Update(
-            server_state.get_new_events(self.player_id),
-        ));
+        if send_update {
+            self.sender.send(ServerMessage::Update(
+                server_state.get_new_events(self.player_id),
+            ));
+        }
     }
 }
 struct ServerApp {

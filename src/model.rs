@@ -101,6 +101,10 @@ impl Model {
                 self.players.get_mut(&player_id).unwrap().position = position;
                 events.push(Event::PlayerUpdated(self.players[&player_id].clone()));
             }
+            ClientMessage::Event(event) => {
+                self.handle(event.clone());
+                events.push(event);
+            }
         }
         events
     }
@@ -117,6 +121,9 @@ impl Model {
             Event::PlayerLeft(player_id) => {
                 self.players.remove(&player_id);
             }
+            Event::TileBroken(position) => {
+                self.tiles.remove(&position);
+            }
         }
     }
 }
@@ -126,4 +133,5 @@ pub enum Event {
     PlayerJoined(Player),
     PlayerUpdated(Player),
     PlayerLeft(Id),
+    TileBroken(Vec2<i32>),
 }
