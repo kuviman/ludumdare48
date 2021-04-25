@@ -1,6 +1,7 @@
 # TODO
 
 - Help
+- Preview place/destroy block
 - Sounds
 - Break effects
 - Player interpolation

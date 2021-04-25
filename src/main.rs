@@ -92,6 +92,7 @@ pub struct Assets {
     pub leg: ugli::Texture,
     pub border: ugli::Texture,
     pub grass: ugli::Texture,
+    pub info: ugli::Texture,
     #[asset(path = "block.png", range = "0..1")]
     pub block: Vec<ugli::Texture>,
     pub block_item: ugli::Texture,

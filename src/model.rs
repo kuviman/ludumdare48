@@ -265,6 +265,7 @@ pub enum ShopType {
     Train,
     Passport,
     LeaderBoard,
+    Info,
     Sell {
         require_item: ItemType,
         give_item: Option<ItemType>,
@@ -286,6 +287,7 @@ impl Shop {
             ShopType::Sell { .. } => "Press E to perform the deal",
             ShopType::Train => "Press E to travel to the other world",
             ShopType::LeaderBoard => "Press E to view leader board",
+            ShopType::Info => "Press E to see other controls :)",
         }
     }
 }
@@ -322,7 +324,11 @@ impl Model {
             items: default(),
             shops: vec![
                 Shop {
-                    position: 2.0,
+                    position: 0.0,
+                    shop_type: ShopType::Info,
+                },
+                Shop {
+                    position: 4.0,
                     shop_type: ShopType::Sell {
                         require_item: ItemType::Chest,
                         give_item: None,
@@ -330,7 +336,7 @@ impl Model {
                     },
                 },
                 Shop {
-                    position: 6.0,
+                    position: 8.0,
                     shop_type: ShopType::Sell {
                         require_item: ItemType::Block,
                         give_item: Some(ItemType::Ladder),
@@ -338,19 +344,19 @@ impl Model {
                     },
                 },
                 Shop {
-                    position: -2.0,
+                    position: -4.0,
                     shop_type: ShopType::House,
                 },
                 Shop {
-                    position: -6.0,
+                    position: -8.0,
                     shop_type: ShopType::Passport,
                 },
                 Shop {
-                    position: -10.0,
+                    position: -12.0,
                     shop_type: ShopType::LeaderBoard,
                 },
                 Shop {
-                    position: -14.0,
+                    position: -16.0,
                     shop_type: ShopType::Train,
                 },
             ],

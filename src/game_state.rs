@@ -312,6 +312,14 @@ impl Default for PlayerState {
     }
 }
 
+const HELPS: &[&str] = &[
+    "Use WASD/Arrows to move around",
+    "Use Left Mouse Button to swing your pickaxe",
+    "Use E to pick up items",
+    "Use Q to drop items",
+    "Use Right Mouse Button to place a block",
+];
+
 pub struct GameState {
     geng: Rc<Geng>,
     assets: Rc<Assets>,
@@ -329,6 +337,7 @@ pub struct GameState {
     framebuffer_size: Vec2<f32>,
     ui_state: UiState,
     ui_controller: geng::ui::Controller,
+    current_help: usize,
 }
 
 impl Drop for GameState {
@@ -373,6 +382,7 @@ impl GameState {
             framebuffer_size: vec2(1.0, 1.0),
             ui_state,
             ui_controller: geng::ui::Controller::new(),
+            current_help: HELPS.len(),
         }
     }
     fn draw_player_part(
@@ -652,16 +662,24 @@ impl GameState {
         self.ui_state.update_player(&mut self.player);
         self.player.target_velocity = vec2(0.0, 0.0);
         if !self.ui_state.locked() {
-            if self.geng.window().is_key_pressed(geng::Key::A) {
+            if self.geng.window().is_key_pressed(geng::Key::A)
+                || self.geng.window().is_key_pressed(geng::Key::Left)
+            {
                 self.player.target_velocity.x -= 1.0;
             }
-            if self.geng.window().is_key_pressed(geng::Key::D) {
+            if self.geng.window().is_key_pressed(geng::Key::D)
+                || self.geng.window().is_key_pressed(geng::Key::Right)
+            {
                 self.player.target_velocity.x += 1.0;
             }
-            if self.geng.window().is_key_pressed(geng::Key::W) {
+            if self.geng.window().is_key_pressed(geng::Key::W)
+                || self.geng.window().is_key_pressed(geng::Key::Up)
+            {
                 self.player.target_velocity.y += 1.0;
             }
-            if self.geng.window().is_key_pressed(geng::Key::S) {
+            if self.geng.window().is_key_pressed(geng::Key::S)
+                || self.geng.window().is_key_pressed(geng::Key::Down)
+            {
                 self.player.target_velocity.y -= 1.0;
             }
         }
@@ -796,6 +814,18 @@ impl GameState {
                         &self.assets.leaderboard,
                         Color::WHITE,
                     );
+                }
+                ShopType::Info => {
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(shop.position, 0.0, 0.0)) * Mat4::scale_uniform(2.0),
+                        &self.assets.info,
+                        Color::WHITE,
+                    );
+                    if let Some(text) = HELPS.get(self.current_help) {
+                        self.draw_text(framebuffer, vec2(1.0 + shop.position, 2.5), 30.0, text);
+                    }
                 }
             }
         }
@@ -1101,6 +1131,12 @@ impl geng::State for GameState {
                             }
                             ShopType::LeaderBoard => {
                                 self.ui_state.leaderboard = true;
+                            }
+                            ShopType::Info => {
+                                self.current_help += 1;
+                                if self.current_help >= HELPS.len() {
+                                    self.current_help = 0;
+                                }
                             }
                             _ => {}
                         }
