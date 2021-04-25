@@ -735,7 +735,7 @@ impl GameState {
             &self.assets.background,
             Color::rgba(1.0, 1.0, 1.0, 0.5),
         );
-        const VIEW_RADIUS: i32 = 10;
+        const VIEW_RADIUS: i32 = 12;
         for shop in &self.model.shops {
             match shop.shop_type {
                 ShopType::Sell {
