@@ -125,3 +125,20 @@ jobs:
           ITCH_GAME: dig-world
           ITCH_USER: kuviman
           PACKAGE: mac
+
+      - name: Copy server files
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: linux
+          target: ld48
+
+      - name: Deploy server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: systemctl --user restart ld48-server
