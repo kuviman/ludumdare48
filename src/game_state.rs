@@ -51,7 +51,11 @@ impl UiState {
         self.changing_name || self.customize_character || self.leaderboard
     }
     fn new(geng: &Rc<Geng>, assets: &Rc<Assets>, player: &Player) -> Self {
-        let ui_theme = Rc::new(geng::ui::Theme::default(geng));
+        let mut ui_theme = geng::ui::Theme::default(geng);
+        ui_theme.usable_color = Color::GRAY;
+        ui_theme.text_color = Color::BLACK;
+        ui_theme.hover_color = Color::BLUE;
+        let ui_theme = Rc::new(ui_theme);
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
@@ -88,7 +92,7 @@ impl UiState {
         let font: &Rc<geng::Font> = &self.assets.font;
         let volume = &mut self.volume;
         let mut stack = ui::stack![ui::row![
-            geng::ui::Text::new("volume", font, 30.0, Color::WHITE).padding_right(30.0),
+            geng::ui::Text::new("volume", font, 30.0, Color::BLACK).padding_right(30.0),
             self.volume_slider
                 .ui(
                     *volume,
