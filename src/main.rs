@@ -40,6 +40,16 @@ pub struct Assets {
     pub chest: ugli::Texture,
 }
 
+impl Assets {
+    pub fn item_texture(&self, item_type: ItemType) -> &ugli::Texture {
+        match item_type {
+            ItemType::Block => &self.block_item,
+            ItemType::Chest => &self.chest,
+            ItemType::Ladder => &self.ladder_item,
+        }
+    }
+}
+
 #[derive(StructOpt)]
 pub struct Opt {
     #[structopt(long)]

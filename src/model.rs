@@ -35,9 +35,11 @@ pub struct Player {
     pub on_ground: bool,
     pub looks_right: bool,
     pub swing: Option<f32>,
+    pub item: Option<Item>,
 }
 
 impl Player {
+    pub const RANGE: f32 = 1.0;
     pub const SPEED: f32 = 3.0;
     pub const JUMP_SPEED: f32 = 4.0;
     pub const JUMP_TIME: f32 = 0.3;
@@ -52,6 +54,7 @@ impl Player {
             on_ground: false,
             looks_right: true,
             swing: None,
+            item: None,
         }
     }
     pub fn matrix(&self) -> Mat4<f32> {
@@ -138,7 +141,7 @@ pub enum Tile {
     Block,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Copy)]
 pub enum ItemType {
     Block,
     Ladder,

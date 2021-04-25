@@ -69,6 +69,7 @@ impl GameState {
         position: Vec2<f32>,
         flip_x: bool,
         rotation: f32,
+        scale: f32,
         color: Color<f32>,
     ) {
         self.renderer.draw(
@@ -79,7 +80,7 @@ impl GameState {
                 * Mat4::scale_uniform(3.0)
                 * Mat4::translate(vec3(0.5, 0.5, 0.0))
                 * Mat4::rotate_z(rotation)
-                * Mat4::scale(vec3(if flip_x { -1.0 } else { 1.0 }, 1.0, 1.0))
+                * Mat4::scale(vec3(if flip_x { -1.0 } else { 1.0 }, 1.0, 1.0) * scale)
                 * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
             texture,
             color,
@@ -92,11 +93,7 @@ impl GameState {
             Mat4::translate(item.position.extend(0.0))
                 * Mat4::scale_uniform(Item::SIZE)
                 * Mat4::translate(vec3(-0.5, 0.0, 0.0)),
-            match item.item_type {
-                ItemType::Block => &self.assets.block_item,
-                ItemType::Chest => &self.assets.chest,
-                ItemType::Ladder => &self.assets.ladder_item,
-            },
+            self.assets.item_texture(item.item_type),
             Color::WHITE,
         );
     }
@@ -126,6 +123,7 @@ impl GameState {
             pick_position,
             false,
             pick_rotation - f32::PI / 4.0,
+            1.0,
             Color::WHITE,
         );
         self.draw_player_part(
@@ -135,6 +133,7 @@ impl GameState {
             pick_position,
             false,
             pick_rotation - f32::PI / 4.0,
+            1.0,
             Color::WHITE,
         );
         self.draw_player_part(
@@ -147,6 +146,7 @@ impl GameState {
             ),
             true,
             0.0,
+            1.0,
             Color::WHITE,
         );
         self.draw_player_part(
@@ -156,6 +156,7 @@ impl GameState {
             vec2(0.0, 0.0),
             false,
             0.0,
+            1.0,
             Color::WHITE,
         );
         self.draw_player_part(
@@ -165,6 +166,7 @@ impl GameState {
             vec2(0.0, leg_arg.sin().max(0.0) * leg_amp + leg_offset),
             false,
             0.0,
+            1.0,
             Color::WHITE,
         );
         self.draw_player_part(
@@ -174,8 +176,21 @@ impl GameState {
             vec2(0.0, 0.0),
             false,
             0.0,
+            1.0,
             Color::WHITE,
         );
+        if let Some(item) = &player.item {
+            self.draw_player_part(
+                framebuffer,
+                player,
+                self.assets.item_texture(item.item_type),
+                vec2(0.0, 1.0),
+                false,
+                0.0,
+                0.3,
+                Color::WHITE,
+            )
+        }
     }
     fn draw_tile(
         &self,
@@ -441,6 +456,30 @@ impl geng::State for GameState {
             geng::Event::KeyDown { key, .. } => match key {
                 geng::Key::Escape => {
                     self.transition = Some(geng::Transition::Pop);
+                }
+                geng::Key::E => {
+                    if let Some(item) = self.player.item.clone() {
+                        // TODO
+                    } else {
+                        let closest_item =
+                            self.model.items.values().min_by_key(|item| {
+                                r32((item.position - self.player.position).len())
+                            });
+                        if let Some(item) = closest_item {
+                            if (item.position - self.player.position).len() < Player::RANGE {
+                                self.player.item = Some(item.clone());
+                                self.to_send
+                                    .push(ClientMessage::Event(Event::ItemRemoved(item.id)));
+                            }
+                        }
+                    }
+                }
+                geng::Key::Q => {
+                    if let Some(mut item) = self.player.item.take() {
+                        item.position = self.player.position;
+                        self.to_send
+                            .push(ClientMessage::Event(Event::ItemAdded(item)));
+                    }
                 }
                 _ => {}
             },
