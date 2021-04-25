@@ -70,7 +70,6 @@ pub struct Assets {
     pub pick_head: ugli::Texture,
     pub body: ugli::Texture,
     pub leg: ugli::Texture,
-    pub eyes: ugli::Texture,
     pub border: ugli::Texture,
     pub grass: ugli::Texture,
     #[asset(path = "block.png", range = "0..1")]
@@ -83,6 +82,20 @@ pub struct Assets {
     pub coin: ugli::Texture,
     pub house: ugli::Texture,
     pub train: ugli::Texture,
+    #[asset(path = "eye/*.png", range = "1..=4")]
+    pub eye: Vec<ugli::Texture>,
+    #[asset(path = "beard/*.png", range = "1..=4")]
+    pub beard: Vec<ugli::Texture>,
+    #[asset(path = "ear/*.png", range = "1..=4")]
+    pub ear: Vec<ugli::Texture>,
+    #[asset(path = "hat/*.png", range = "1..=4")]
+    pub hat: Vec<ugli::Texture>,
+    #[asset(path = "mouth/*.png", range = "1..=4")]
+    pub mouth: Vec<ugli::Texture>,
+    #[asset(path = "mustache/*.png", range = "1..=4")]
+    pub mustache: Vec<ugli::Texture>,
+    #[asset(path = "nose/*.png", range = "1..=4")]
+    pub nose: Vec<ugli::Texture>,
 }
 
 impl Assets {

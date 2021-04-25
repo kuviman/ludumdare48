@@ -39,6 +39,14 @@ pub struct Player {
     pub money: usize,
     pub skin_tone: f64,
     pub stick: f64,
+    pub hat_color: f64,
+    pub beard: usize,
+    pub ear: usize,
+    pub eye: usize,
+    pub hat: usize,
+    pub mouth: usize,
+    pub mustache: usize,
+    pub nose: usize,
 }
 
 impl Player {
@@ -61,6 +69,14 @@ impl Player {
             money: 0,
             skin_tone: global_rng().gen_range(0.0..1.0),
             stick: global_rng().gen_range(0.0..1.0),
+            hat_color: global_rng().gen_range(0.0..1.0),
+            beard: global_rng().gen_range(0..5),
+            ear: global_rng().gen_range(0..4),
+            eye: global_rng().gen_range(0..4),
+            hat: global_rng().gen_range(0..5),
+            mouth: global_rng().gen_range(0..4),
+            mustache: global_rng().gen_range(0..5),
+            nose: global_rng().gen_range(0..4),
         }
     }
     pub fn matrix(&self) -> Mat4<f32> {

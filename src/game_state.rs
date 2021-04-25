@@ -24,6 +24,22 @@ struct UiState {
     skin_tone_slider: geng::ui::Slider,
     stick: f64,
     stick_slider: geng::ui::Slider,
+    hat_color: f64,
+    hat_color_slider: geng::ui::Slider,
+    beard: usize,
+    beard_slider: geng::ui::Slider,
+    ear: usize,
+    ear_slider: geng::ui::Slider,
+    eye: usize,
+    eye_slider: geng::ui::Slider,
+    hat: usize,
+    hat_slider: geng::ui::Slider,
+    mouth: usize,
+    mouth_slider: geng::ui::Slider,
+    mustache: usize,
+    mustache_slider: geng::ui::Slider,
+    nose: usize,
+    nose_slider: geng::ui::Slider,
     customize_character: bool,
 }
 
@@ -38,6 +54,22 @@ impl UiState {
             skin_tone_slider: geng::ui::Slider::new(&ui_theme),
             stick: player.stick,
             stick_slider: geng::ui::Slider::new(&ui_theme),
+            hat_color: player.hat_color,
+            hat_color_slider: geng::ui::Slider::new(&ui_theme),
+            beard: player.beard,
+            beard_slider: geng::ui::Slider::new(&ui_theme),
+            ear: player.ear,
+            ear_slider: geng::ui::Slider::new(&ui_theme),
+            eye: player.eye,
+            eye_slider: geng::ui::Slider::new(&ui_theme),
+            hat: player.hat,
+            hat_slider: geng::ui::Slider::new(&ui_theme),
+            mouth: player.mouth,
+            mouth_slider: geng::ui::Slider::new(&ui_theme),
+            mustache: player.mustache,
+            mustache_slider: geng::ui::Slider::new(&ui_theme),
+            nose: player.nose,
+            nose_slider: geng::ui::Slider::new(&ui_theme),
             customize_character: false,
         }
     }
@@ -83,6 +115,94 @@ impl UiState {
                     )
                     .fixed_size(vec2(300.0, 50.0))
             ]));
+            let eye = &mut self.eye;
+            column.push(Box::new(ui::row![
+                geng::ui::Text::new("eye", font, 50.0, Color::BLACK).padding_right(50.0),
+                self.eye_slider
+                    .ui(
+                        *eye as f64,
+                        0.0..=3.0,
+                        Box::new(move |new_value| *eye = new_value.round() as usize)
+                    )
+                    .fixed_size(vec2(300.0, 50.0))
+            ]));
+            let ear = &mut self.ear;
+            column.push(Box::new(ui::row![
+                geng::ui::Text::new("ear", font, 50.0, Color::BLACK).padding_right(50.0),
+                self.ear_slider
+                    .ui(
+                        *ear as f64,
+                        0.0..=3.0,
+                        Box::new(move |new_value| *ear = new_value.round() as usize)
+                    )
+                    .fixed_size(vec2(300.0, 50.0))
+            ]));
+            let mouth = &mut self.mouth;
+            column.push(Box::new(ui::row![
+                geng::ui::Text::new("mouth", font, 50.0, Color::BLACK).padding_right(50.0),
+                self.mouth_slider
+                    .ui(
+                        *mouth as f64,
+                        0.0..=3.0,
+                        Box::new(move |new_value| *mouth = new_value.round() as usize)
+                    )
+                    .fixed_size(vec2(300.0, 50.0))
+            ]));
+            let nose = &mut self.nose;
+            column.push(Box::new(ui::row![
+                geng::ui::Text::new("nose", font, 50.0, Color::BLACK).padding_right(50.0),
+                self.nose_slider
+                    .ui(
+                        *nose as f64,
+                        0.0..=3.0,
+                        Box::new(move |new_value| *nose = new_value.round() as usize)
+                    )
+                    .fixed_size(vec2(300.0, 50.0))
+            ]));
+            let mustache = &mut self.mustache;
+            column.push(Box::new(ui::row![
+                geng::ui::Text::new("mustache", font, 50.0, Color::BLACK).padding_right(50.0),
+                self.mustache_slider
+                    .ui(
+                        *mustache as f64,
+                        0.0..=4.0,
+                        Box::new(move |new_value| *mustache = new_value.round() as usize)
+                    )
+                    .fixed_size(vec2(300.0, 50.0))
+            ]));
+            let beard = &mut self.beard;
+            column.push(Box::new(ui::row![
+                geng::ui::Text::new("beard", font, 50.0, Color::BLACK).padding_right(50.0),
+                self.beard_slider
+                    .ui(
+                        *beard as f64,
+                        0.0..=4.0,
+                        Box::new(move |new_value| *beard = new_value.round() as usize)
+                    )
+                    .fixed_size(vec2(300.0, 50.0))
+            ]));
+            let hat = &mut self.hat;
+            column.push(Box::new(ui::row![
+                geng::ui::Text::new("hat", font, 50.0, Color::BLACK).padding_right(50.0),
+                self.hat_slider
+                    .ui(
+                        *hat as f64,
+                        0.0..=4.0,
+                        Box::new(move |new_value| *hat = new_value.round() as usize)
+                    )
+                    .fixed_size(vec2(300.0, 50.0))
+            ]));
+            let hat_color = &mut self.hat_color;
+            column.push(Box::new(ui::row![
+                geng::ui::Text::new("hat color", font, 50.0, Color::BLACK).padding_right(24.0),
+                self.hat_color_slider
+                    .ui(
+                        *hat_color,
+                        0.0..=1.0,
+                        Box::new(move |new_value| *hat_color = new_value)
+                    )
+                    .fixed_size(vec2(300.0, 50.0))
+            ]));
             stack.push(Box::new(column.uniform_padding(50.0).align(vec2(0.5, 1.0))));
         }
         stack
@@ -90,6 +210,14 @@ impl UiState {
     fn update_player(&self, player: &mut Player) {
         player.skin_tone = self.skin_tone;
         player.stick = self.stick;
+        player.hat_color = self.hat_color;
+        player.beard = self.beard;
+        player.ear = self.ear;
+        player.eye = self.eye;
+        player.hat = self.hat;
+        player.mouth = self.mouth;
+        player.mustache = self.mustache;
+        player.nose = self.nose;
     }
 }
 
@@ -142,7 +270,7 @@ impl GameState {
             }
             None => welcome.model.players[&welcome.player_id].clone(),
         };
-        let mut ui_state = UiState::new(geng, &player);
+        let ui_state = UiState::new(geng, &player);
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
@@ -250,6 +378,11 @@ impl GameState {
             1.0,
             Color::WHITE,
         );
+        let skin_color = hsv(
+            6.0 / 255.0,
+            80.0 / 255.0,
+            (50.0 + (255.0 - 50.0) * player.skin_tone as f32) / 255.0,
+        );
         self.draw_player_part(
             framebuffer,
             player,
@@ -258,11 +391,7 @@ impl GameState {
             false,
             0.0,
             1.0,
-            hsv(
-                6.0 / 255.0,
-                80.0 / 255.0,
-                (50.0 + (255.0 - 50.0) * player.skin_tone as f32) / 255.0,
-            ),
+            skin_color,
         );
         self.draw_player_part(
             framebuffer,
@@ -274,16 +403,90 @@ impl GameState {
             1.0,
             Color::WHITE,
         );
-        self.draw_player_part(
-            framebuffer,
-            player,
-            &self.assets.eyes,
-            vec2(0.0, 0.0),
-            false,
-            0.0,
-            1.0,
-            Color::WHITE,
-        );
+        if let Some(texture) = self.assets.eye.get(player.eye) {
+            self.draw_player_part(
+                framebuffer,
+                player,
+                texture,
+                vec2(0.0, 0.0),
+                false,
+                0.0,
+                1.0,
+                Color::WHITE,
+            );
+        }
+        if let Some(texture) = self.assets.mouth.get(player.mouth) {
+            self.draw_player_part(
+                framebuffer,
+                player,
+                texture,
+                vec2(0.0, 0.0),
+                false,
+                0.0,
+                1.0,
+                Color::WHITE,
+            );
+        }
+        if let Some(texture) = self.assets.mustache.get(player.mustache) {
+            self.draw_player_part(
+                framebuffer,
+                player,
+                texture,
+                vec2(0.0, 0.0),
+                false,
+                0.0,
+                1.0,
+                Color::WHITE,
+            );
+        }
+        if let Some(texture) = self.assets.nose.get(player.nose) {
+            self.draw_player_part(
+                framebuffer,
+                player,
+                texture,
+                vec2(0.0, 0.0),
+                false,
+                0.0,
+                1.0,
+                skin_color,
+            );
+        }
+        if let Some(texture) = self.assets.beard.get(player.beard) {
+            self.draw_player_part(
+                framebuffer,
+                player,
+                texture,
+                vec2(0.0, 0.0),
+                false,
+                0.0,
+                1.0,
+                Color::WHITE,
+            );
+        }
+        if let Some(texture) = self.assets.hat.get(player.hat) {
+            self.draw_player_part(
+                framebuffer,
+                player,
+                texture,
+                vec2(0.0, 0.0),
+                false,
+                0.0,
+                1.0,
+                hsv(player.hat_color as f32, 0.5, 0.7),
+            );
+        }
+        if let Some(texture) = self.assets.ear.get(player.ear) {
+            self.draw_player_part(
+                framebuffer,
+                player,
+                texture,
+                vec2(0.0, 0.0),
+                false,
+                0.0,
+                1.0,
+                skin_color,
+            );
+        }
         if let Some(item) = &player.item {
             self.draw_player_part(
                 framebuffer,
@@ -672,9 +875,6 @@ impl geng::State for GameState {
             .handle_event(&mut self.ui_state.ui(), event.clone());
         match event {
             geng::Event::KeyDown { key, .. } => match key {
-                geng::Key::Escape => {
-                    self.transition = Some(geng::Transition::Pop);
-                }
                 geng::Key::E => {
                     let shop = self.model.shops.iter().find(|shop| {
                         AABB::pos_size(vec2(shop.position, 0.0) - self.player.size, vec2(2.0, 2.0))
