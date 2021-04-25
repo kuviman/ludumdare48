@@ -47,6 +47,7 @@ pub struct Player {
     pub mouth: usize,
     pub mustache: usize,
     pub nose: usize,
+    pub name: String,
 }
 
 impl Player {
@@ -77,6 +78,7 @@ impl Player {
             mouth: global_rng().gen_range(0..4),
             mustache: global_rng().gen_range(0..5),
             nose: global_rng().gen_range(0..4),
+            name: String::new(),
         }
     }
     pub fn matrix(&self) -> Mat4<f32> {

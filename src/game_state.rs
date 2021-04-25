@@ -1,5 +1,3 @@
-use ugli::Framebuffer;
-
 use super::*;
 
 struct PlayerState {
@@ -41,9 +39,13 @@ struct UiState {
     nose: usize,
     nose_slider: geng::ui::Slider,
     customize_character: bool,
+    changing_name: bool,
 }
 
 impl UiState {
+    fn locked(&self) -> bool {
+        self.changing_name || self.customize_character
+    }
     fn new(geng: &Rc<Geng>, player: &Player) -> Self {
         let ui_theme = Rc::new(geng::ui::Theme::default(geng));
         Self {
@@ -71,6 +73,7 @@ impl UiState {
             nose: player.nose,
             nose_slider: geng::ui::Slider::new(&ui_theme),
             customize_character: false,
+            changing_name: false,
         }
     }
     fn ui<'a>(&'a mut self) -> impl geng::ui::Widget + 'a {
@@ -427,18 +430,6 @@ impl GameState {
                 Color::WHITE,
             );
         }
-        if let Some(texture) = self.assets.mustache.get(player.mustache) {
-            self.draw_player_part(
-                framebuffer,
-                player,
-                texture,
-                vec2(0.0, 0.0),
-                false,
-                0.0,
-                1.0,
-                Color::WHITE,
-            );
-        }
         if let Some(texture) = self.assets.nose.get(player.nose) {
             self.draw_player_part(
                 framebuffer,
@@ -487,6 +478,18 @@ impl GameState {
                 skin_color,
             );
         }
+        if let Some(texture) = self.assets.mustache.get(player.mustache) {
+            self.draw_player_part(
+                framebuffer,
+                player,
+                texture,
+                vec2(0.0, 0.0),
+                false,
+                0.0,
+                1.0,
+                Color::WHITE,
+            );
+        }
         if let Some(item) = &player.item {
             self.draw_player_part(
                 framebuffer,
@@ -498,6 +501,27 @@ impl GameState {
                 0.3,
                 Color::WHITE,
             )
+        }
+        if !player.name.is_empty() || self.ui_state.changing_name {
+            let mut text = player.name.clone();
+            if self.ui_state.changing_name {
+                text.push('_');
+            }
+            let pos = self.camera.world_to_screen(
+                framebuffer.size().map(|x| x as f32),
+                player.position + vec2(player.size.x / 2.0, player.size.y * 1.5),
+            );
+            let font = self.geng.default_font();
+            let text_width = font.measure(&text, 30.0).width();
+            self.geng.draw_2d().quad(
+                framebuffer,
+                AABB::pos_size(
+                    pos - vec2(text_width / 2.0 + 5.0, 5.0),
+                    vec2(text_width + 10.0, 40.0),
+                ),
+                Color::rgba(1.0, 1.0, 1.0, 0.7),
+            );
+            font.draw_aligned(framebuffer, &text, pos, 0.5, 30.0, Color::BLACK);
         }
     }
     fn draw_tile(
@@ -537,17 +561,19 @@ impl GameState {
     fn update_player(&mut self, delta_time: f32) {
         self.ui_state.update_player(&mut self.player);
         self.player.target_velocity = vec2(0.0, 0.0);
-        if self.geng.window().is_key_pressed(geng::Key::A) {
-            self.player.target_velocity.x -= 1.0;
-        }
-        if self.geng.window().is_key_pressed(geng::Key::D) {
-            self.player.target_velocity.x += 1.0;
-        }
-        if self.geng.window().is_key_pressed(geng::Key::W) {
-            self.player.target_velocity.y += 1.0;
-        }
-        if self.geng.window().is_key_pressed(geng::Key::S) {
-            self.player.target_velocity.y -= 1.0;
+        if !self.ui_state.locked() {
+            if self.geng.window().is_key_pressed(geng::Key::A) {
+                self.player.target_velocity.x -= 1.0;
+            }
+            if self.geng.window().is_key_pressed(geng::Key::D) {
+                self.player.target_velocity.x += 1.0;
+            }
+            if self.geng.window().is_key_pressed(geng::Key::W) {
+                self.player.target_velocity.y += 1.0;
+            }
+            if self.geng.window().is_key_pressed(geng::Key::S) {
+                self.player.target_velocity.y -= 1.0;
+            }
         }
         self.player.update(&self.model.tiles, delta_time);
         if let Some(position) = self.left_click {
@@ -771,7 +797,7 @@ impl GameState {
             .geng
             .window()
             .is_button_pressed(geng::MouseButton::Left)
-            && !self.ui_state.customize_character
+            && !self.ui_state.locked()
         {
             self.left_click = Some(self.camera.screen_to_world(
                 framebuffer.size().map(|x| x as f32),
@@ -807,15 +833,6 @@ impl geng::State for GameState {
             AABB::pos_size(vec2(shop.position, 0.0) - self.player.size, vec2(2.0, 2.0))
                 .contains(self.player.position)
         });
-        if let Some(Shop {
-            shop_type: ShopType::House,
-            ..
-        }) = shop
-        {
-            self.ui_state.customize_character = true;
-        } else {
-            self.ui_state.customize_character = false;
-        }
         self.ui_controller
             .draw(&mut self.ui_state.ui(), framebuffer);
     }
@@ -882,29 +899,52 @@ impl geng::State for GameState {
     fn handle_event(&mut self, event: geng::Event) {
         self.ui_controller
             .handle_event(&mut self.ui_state.ui(), event.clone());
+        if let geng::Event::KeyDown { key, .. } = event {
+            let c = format!("{:?}", key);
+            if c.len() == 1 && self.ui_state.changing_name {
+                if self.player.name.len() < 20 {
+                    self.player.name.push_str(&c);
+                }
+                return;
+            }
+            if key == geng::Key::Backspace && self.ui_state.changing_name {
+                self.player.name.pop();
+            }
+        }
         match event {
             geng::Event::KeyDown { key, .. } => match key {
+                geng::Key::Escape | geng::Key::Enter => {
+                    self.ui_state.customize_character = false;
+                    self.ui_state.changing_name = false;
+                }
                 geng::Key::E => {
                     let shop = self.model.shops.iter().find(|shop| {
                         AABB::pos_size(vec2(shop.position, 0.0) - self.player.size, vec2(2.0, 2.0))
                             .contains(self.player.position)
                     });
-                    if let Some(Shop {
-                        shop_type: ShopType::Train,
-                        ..
-                    }) = shop
-                    {
-                        self.transition = Some(match self.connection {
-                            Connection::Local { .. } => {
-                                geng::Transition::Push(Box::new(ConnectingState::new(
-                                    &self.geng,
-                                    &self.assets,
-                                    &self.opt,
-                                    Some(self.player.clone()),
-                                )))
+                    if let Some(shop) = shop {
+                        match shop.shop_type {
+                            ShopType::Train => {
+                                self.transition = Some(match self.connection {
+                                    Connection::Local { .. } => {
+                                        geng::Transition::Push(Box::new(ConnectingState::new(
+                                            &self.geng,
+                                            &self.assets,
+                                            &self.opt,
+                                            Some(self.player.clone()),
+                                        )))
+                                    }
+                                    Connection::Remote(_) => geng::Transition::Pop,
+                                });
                             }
-                            Connection::Remote(_) => geng::Transition::Pop,
-                        });
+                            ShopType::House => {
+                                self.ui_state.customize_character = true;
+                            }
+                            ShopType::Passport => {
+                                self.ui_state.changing_name = true;
+                            }
+                            _ => {}
+                        }
                     }
                     if let Some(item) = self.player.item.clone() {
                         if let Some(&Shop {
