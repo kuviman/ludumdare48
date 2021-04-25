@@ -1118,9 +1118,10 @@ impl geng::State for GameState {
                                         id: item_id,
                                         position: self.player.position,
                                         item_type,
+                                        value: 0,
                                     })
                                 } else {
-                                    self.player.money += 1;
+                                    self.player.money += item.value;
                                 }
                             }
                         }

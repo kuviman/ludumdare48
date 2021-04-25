@@ -214,6 +214,7 @@ pub struct Item {
     pub id: Id,
     pub position: Vec2<f32>,
     pub item_type: ItemType,
+    pub value: usize,
 }
 
 impl Item {
@@ -223,6 +224,7 @@ impl Item {
             id: id_gen.gen(),
             position,
             item_type,
+            value: 0,
         }
     }
 }
@@ -412,12 +414,14 @@ impl Model {
                 if let Some(tile) = self.tiles.remove(&position) {
                     if let Some(events) = events {
                         if global_rng().gen_bool(0.1) && tile == Tile::Stone {
-                            let event = Event::ItemAdded(Item::new(
+                            let mut item = Item::new(
                                 &mut self.id_gen,
                                 position.map(|x| x as f32)
                                     + vec2(global_rng().gen_range(0.0..1.0), 0.0),
                                 ItemType::Chest,
-                            ));
+                            );
+                            item.value = (-position.y) as usize;
+                            let event = Event::ItemAdded(item);
                             events.push(event.clone());
                             self.handle_impl(event, None);
                         } else {
