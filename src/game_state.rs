@@ -1210,7 +1210,7 @@ impl geng::State for GameState {
         }
         match event {
             geng::Event::KeyDown { key, .. } => match key {
-                geng::Key::Escape | geng::Key::Enter => {
+                geng::Key::Escape | geng::Key::Enter | geng::Key::E if self.ui_state.locked() => {
                     self.ui_state.customize_character = false;
                     self.ui_state.changing_name = false;
                     self.ui_state.leaderboard = false;
