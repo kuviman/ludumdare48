@@ -246,8 +246,14 @@ impl GameState {
             match self.player.swing {
                 None => self.player.swing = Some(0.0),
                 Some(swing) if swing > 1.0 => {
-                    self.to_send
-                        .push(ClientMessage::Event(Event::TileBroken(position)));
+                    if ((self.player.position + self.player.size / 2.0)
+                        - position.map(|x| x as f32 + 0.5))
+                    .len()
+                        < Player::RANGE
+                    {
+                        self.to_send
+                            .push(ClientMessage::Event(Event::TileBroken(position)));
+                    }
                     self.player.swing = Some(0.0);
                 }
                 _ => {}
@@ -478,10 +484,16 @@ impl geng::State for GameState {
                         if let Some(item) = &self.player.item {
                             if !self.model.tiles.contains_key(&position) {
                                 if let Some(tile) = item.item_type.placed() {
-                                    self.to_send.push(ClientMessage::Event(Event::TilePlaced(
-                                        position, tile,
-                                    )));
-                                    self.player.item = None;
+                                    if ((self.player.position + self.player.size / 2.0)
+                                        - position.map(|x| x as f32 + 0.5))
+                                    .len()
+                                        < Player::RANGE
+                                    {
+                                        self.to_send.push(ClientMessage::Event(Event::TilePlaced(
+                                            position, tile,
+                                        )));
+                                        self.player.item = None;
+                                    }
                                 }
                             }
                         }

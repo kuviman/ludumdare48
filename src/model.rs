@@ -39,7 +39,7 @@ pub struct Player {
 }
 
 impl Player {
-    pub const RANGE: f32 = 1.0;
+    pub const RANGE: f32 = 1.5;
     pub const SPEED: f32 = 3.0;
     pub const JUMP_SPEED: f32 = 4.0;
     pub const JUMP_TIME: f32 = 0.3;
