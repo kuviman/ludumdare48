@@ -18,6 +18,46 @@ pub use renderer::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use server::Server;
 
+pub fn hsv(h: f32, s: f32, v: f32) -> Color<f32> {
+    hsva(h, s, v, 1.0)
+}
+pub fn hsva(mut h: f32, s: f32, v: f32, a: f32) -> Color<f32> {
+    h -= h.floor();
+    let r;
+    let g;
+    let b;
+    let f = h * 6.0 - (h * 6.0).floor();
+    let p = v * (1.0 - s);
+    let q = v * (1.0 - f * s);
+    let t = v * (1.0 - (1.0 - f) * s);
+    if h * 6.0 < 1.0 {
+        r = v;
+        g = t;
+        b = p;
+    } else if h * 6.0 < 2.0 {
+        r = q;
+        g = v;
+        b = p;
+    } else if h * 6.0 < 3.0 {
+        r = p;
+        g = v;
+        b = t;
+    } else if h * 6.0 < 4.0 {
+        r = p;
+        g = q;
+        b = v;
+    } else if h * 6.0 < 5.0 {
+        r = t;
+        g = p;
+        b = v;
+    } else {
+        r = v;
+        g = p;
+        b = q;
+    }
+    Color::rgba(r, g, b, a)
+}
+
 #[derive(geng::Assets)]
 pub struct Assets {
     pub art: ugli::Texture,

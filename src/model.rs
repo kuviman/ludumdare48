@@ -37,6 +37,8 @@ pub struct Player {
     pub swing: Option<f32>,
     pub item: Option<Item>,
     pub money: usize,
+    pub skin_tone: f64,
+    pub stick: f64,
 }
 
 impl Player {
@@ -57,6 +59,8 @@ impl Player {
             swing: None,
             item: None,
             money: 0,
+            skin_tone: global_rng().gen_range(0.0..1.0),
+            stick: global_rng().gen_range(0.0..1.0),
         }
     }
     pub fn matrix(&self) -> Mat4<f32> {

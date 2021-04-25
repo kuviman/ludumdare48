@@ -16,6 +16,82 @@ impl PlayerState {
         self.step_animation += player.target_velocity.len() * delta_time;
     }
 }
+struct UiState {
+    geng: Rc<Geng>,
+    volume_slider: geng::ui::Slider,
+    volume: f64,
+    skin_tone: f64,
+    skin_tone_slider: geng::ui::Slider,
+    stick: f64,
+    stick_slider: geng::ui::Slider,
+    customize_character: bool,
+}
+
+impl UiState {
+    fn new(geng: &Rc<Geng>, player: &Player) -> Self {
+        let ui_theme = Rc::new(geng::ui::Theme::default(geng));
+        Self {
+            geng: geng.clone(),
+            volume_slider: geng::ui::Slider::new(&ui_theme),
+            volume: 0.5,
+            skin_tone: player.skin_tone,
+            skin_tone_slider: geng::ui::Slider::new(&ui_theme),
+            stick: player.stick,
+            stick_slider: geng::ui::Slider::new(&ui_theme),
+            customize_character: false,
+        }
+    }
+    fn ui<'a>(&'a mut self) -> impl geng::ui::Widget + 'a {
+        use geng::ui;
+        use geng::ui::*;
+        let font = self.geng.default_font();
+        let volume = &mut self.volume;
+        let mut stack = ui::stack![ui::row![
+            geng::ui::Text::new("volume", font, 30.0, Color::WHITE).padding_right(30.0),
+            self.volume_slider
+                .ui(
+                    *volume,
+                    0.0..=1.0,
+                    Box::new(move |new_value| *volume = new_value)
+                )
+                .fixed_size(vec2(100.0, 30.0))
+        ]
+        .padding_right(50.0)
+        .padding_bottom(50.0)
+        .align(vec2(1.0, 0.0))];
+        if self.customize_character {
+            let mut column = ui::column(vec![]);
+            let skin_tone = &mut self.skin_tone;
+            column.push(Box::new(ui::row![
+                geng::ui::Text::new("skin tone", font, 50.0, Color::BLACK).padding_right(24.0),
+                self.skin_tone_slider
+                    .ui(
+                        *skin_tone,
+                        0.0..=1.0,
+                        Box::new(move |new_value| *skin_tone = new_value)
+                    )
+                    .fixed_size(vec2(300.0, 50.0))
+            ]));
+            let stick = &mut self.stick;
+            column.push(Box::new(ui::row![
+                geng::ui::Text::new("pickaxe color", font, 50.0, Color::BLACK).padding_right(24.0),
+                self.stick_slider
+                    .ui(
+                        *stick,
+                        0.0..=1.0,
+                        Box::new(move |new_value| *stick = new_value)
+                    )
+                    .fixed_size(vec2(300.0, 50.0))
+            ]));
+            stack.push(Box::new(column.uniform_padding(50.0).align(vec2(0.5, 1.0))));
+        }
+        stack
+    }
+    fn update_player(&self, player: &mut Player) {
+        player.skin_tone = self.skin_tone;
+        player.stick = self.stick;
+    }
+}
 
 impl Default for PlayerState {
     fn default() -> Self {
@@ -38,6 +114,8 @@ pub struct GameState {
     to_send: Vec<ClientMessage>,
     noise: noise::OpenSimplex,
     framebuffer_size: Vec2<f32>,
+    ui_state: UiState,
+    ui_controller: geng::ui::Controller,
 }
 
 impl Drop for GameState {
@@ -64,6 +142,7 @@ impl GameState {
             }
             None => welcome.model.players[&welcome.player_id].clone(),
         };
+        let mut ui_state = UiState::new(geng, &player);
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
@@ -79,6 +158,8 @@ impl GameState {
             to_send: Vec::new(),
             noise: noise::OpenSimplex::new(),
             framebuffer_size: vec2(1.0, 1.0),
+            ui_state,
+            ui_controller: geng::ui::Controller::new(),
         }
     }
     fn draw_player_part(
@@ -144,7 +225,7 @@ impl GameState {
             false,
             pick_rotation - f32::PI / 4.0,
             1.0,
-            Color::WHITE,
+            hsv(player.stick as f32, 0.5, 0.7),
         );
         self.draw_player_part(
             framebuffer,
@@ -177,7 +258,11 @@ impl GameState {
             false,
             0.0,
             1.0,
-            Color::WHITE,
+            hsv(
+                6.0 / 255.0,
+                80.0 / 255.0,
+                (50.0 + (255.0 - 50.0) * player.skin_tone as f32) / 255.0,
+            ),
         );
         self.draw_player_part(
             framebuffer,
@@ -247,6 +332,7 @@ impl GameState {
         self.draw_tile(framebuffer, position, &textures[index], color);
     }
     fn update_player(&mut self, delta_time: f32) {
+        self.ui_state.update_player(&mut self.player);
         self.player.target_velocity = vec2(0.0, 0.0);
         if self.geng.window().is_key_pressed(geng::Key::A) {
             self.player.target_velocity.x -= 1.0;
@@ -473,6 +559,7 @@ impl GameState {
             .geng
             .window()
             .is_button_pressed(geng::MouseButton::Left)
+            && !self.ui_state.customize_character
         {
             self.left_click = Some(self.camera.screen_to_world(
                 framebuffer.size().map(|x| x as f32),
@@ -504,8 +591,25 @@ impl GameState {
 impl geng::State for GameState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.draw_impl(framebuffer);
+        let shop = self.model.shops.iter().find(|shop| {
+            AABB::pos_size(vec2(shop.position, 0.0) - self.player.size, vec2(2.0, 2.0))
+                .contains(self.player.position)
+        });
+        if let Some(Shop {
+            shop_type: ShopType::House,
+            ..
+        }) = shop
+        {
+            self.ui_state.customize_character = true;
+        } else {
+            self.ui_state.customize_character = false;
+        }
+        self.ui_controller
+            .draw(&mut self.ui_state.ui(), framebuffer);
     }
     fn update(&mut self, delta_time: f64) {
+        self.ui_controller
+            .update(&mut self.ui_state.ui(), delta_time);
         let mut messages = Vec::new();
         match &mut self.connection {
             Connection::Remote(connection) => messages.extend(connection.new_messages()),
@@ -564,6 +668,8 @@ impl geng::State for GameState {
             .update(&self.player, delta_time);
     }
     fn handle_event(&mut self, event: geng::Event) {
+        self.ui_controller
+            .handle_event(&mut self.ui_state.ui(), event.clone());
         match event {
             geng::Event::KeyDown { key, .. } => match key {
                 geng::Key::Escape => {
