@@ -384,7 +384,7 @@ impl Model {
     }
     #[must_use]
     pub fn drop_player(&mut self, player_id: Id) -> Vec<Event> {
-        self.players.remove(&player_id).unwrap();
+        self.players.remove(&player_id);
         vec![Event::PlayerLeft(player_id)]
     }
     #[must_use]
