@@ -268,6 +268,17 @@ pub struct Shop {
     pub shop_type: ShopType,
 }
 
+impl Shop {
+    pub fn help(&self) -> &str {
+        match &self.shop_type {
+            ShopType::House => "Press E to customize yourself",
+            ShopType::Passport => "Press E to change your name",
+            ShopType::Sell { .. } => "Press E to perform the deal",
+            ShopType::Train => "Press E to travel to the other world",
+        }
+    }
+}
+
 pub type TileMap = HashMap<Vec2<i32>, Tile>;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

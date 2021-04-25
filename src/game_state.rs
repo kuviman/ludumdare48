@@ -208,7 +208,13 @@ impl UiState {
                     )
                     .fixed_size(vec2(300.0, 50.0))
             ]));
-            stack.push(Box::new(column.uniform_padding(50.0).align(vec2(0.5, 1.0))));
+            stack.push(Box::new(
+                geng::ui::stack![
+                    geng::ui::ColorBox::new(&self.geng, Color::rgba(1.0, 1.0, 1.0, 0.7)),
+                    column.uniform_padding(50.0),
+                ]
+                .align(vec2(0.0, 1.0)),
+            ));
         }
         stack
     }
@@ -346,7 +352,13 @@ impl GameState {
         }
         let mut pick_position = vec2(0.0, 0.0);
         let mut pick_rotation = f32::PI / 4.0;
-        if let Some(swing) = player.swing {
+        if let Some(swing) = player.swing.or(
+            if self.ui_state.customize_character && self.player.id == player.id {
+                Some(-1.0 / 8.0)
+            } else {
+                None
+            },
+        ) {
             pick_rotation = swing * f32::PI * 2.0 + f32::PI;
             pick_position = Vec2::rotated(vec2(1.0, 0.0), pick_rotation);
         }
@@ -432,18 +444,6 @@ impl GameState {
                 Color::WHITE,
             );
         }
-        if let Some(texture) = self.assets.nose.get(player.nose) {
-            self.draw_player_part(
-                framebuffer,
-                player,
-                texture,
-                vec2(0.0, 0.0),
-                false,
-                0.0,
-                1.0,
-                skin_color,
-            );
-        }
         if let Some(texture) = self.assets.beard.get(player.beard) {
             self.draw_player_part(
                 framebuffer,
@@ -492,6 +492,18 @@ impl GameState {
                 Color::WHITE,
             );
         }
+        if let Some(texture) = self.assets.nose.get(player.nose) {
+            self.draw_player_part(
+                framebuffer,
+                player,
+                texture,
+                vec2(0.0, 0.0),
+                false,
+                0.0,
+                1.0,
+                skin_color,
+            );
+        }
         if let Some(item) = &player.item {
             self.draw_player_part(
                 framebuffer,
@@ -504,9 +516,10 @@ impl GameState {
                 Color::WHITE,
             )
         }
-        if !player.name.is_empty() || self.ui_state.changing_name {
+        let changing_name = self.ui_state.changing_name && player.id == self.player.id;
+        if !player.name.is_empty() || changing_name {
             let mut text = player.name.clone();
-            if self.ui_state.changing_name {
+            if changing_name {
                 text.push('_');
             }
             let pos = self.camera.world_to_screen(
@@ -514,16 +527,17 @@ impl GameState {
                 player.position + vec2(player.size.x / 2.0, player.size.y * 2.0),
             );
             let font = &self.assets.font;
-            let text_width = font.measure(&text, 30.0).width();
+            let size = framebuffer.size().y as f32 / self.camera.fov / 3.0;
+            let text_width = font.measure(&text, size).width();
             self.geng.draw_2d().quad(
                 framebuffer,
                 AABB::pos_size(
                     pos - vec2(text_width / 2.0 + 5.0, 5.0),
-                    vec2(text_width + 10.0, 40.0),
+                    vec2(text_width + 10.0, size + 10.0),
                 ),
                 Color::rgba(1.0, 1.0, 1.0, 0.7),
             );
-            font.draw_aligned(framebuffer, &text, pos, 0.5, 30.0, Color::BLACK);
+            font.draw_aligned(framebuffer, &text, pos, 0.5, size, Color::BLACK);
         }
     }
     fn draw_tile(
@@ -602,7 +616,13 @@ impl GameState {
 
     fn draw_impl(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.framebuffer_size = framebuffer.size().map(|x| x as f32);
-        self.camera.center = self.player.position;
+        if self.ui_state.locked() {
+            self.camera.target_position = self.player.position;
+            self.camera.target_fov = 3.0;
+        } else {
+            self.camera.target_position = self.player.position;
+            self.camera.target_fov = 10.0;
+        }
         ugli::clear(framebuffer, Some(Color::rgb(0.8, 0.8, 1.0)), None);
         const VIEW_RADIUS: i32 = 10;
         for shop in &self.model.shops {
@@ -825,20 +845,53 @@ impl GameState {
             Color::WHITE,
         );
         font.draw(framebuffer, &text, vec2(150.0, 50.0), 100.0, Color::BLACK);
+        if !self.ui_state.locked() {
+            let shop = self.model.shops.iter().find(|shop| {
+                AABB::pos_size(vec2(shop.position, 0.0) - self.player.size, vec2(2.0, 2.0))
+                    .contains(self.player.position)
+            });
+            if let Some(shop) = shop {
+                self.draw_text(
+                    framebuffer,
+                    vec2(shop.position + 1.0, 3.0),
+                    40.0,
+                    shop.help(),
+                );
+            }
+        }
+    }
+    fn draw_text(
+        &self,
+        framebuffer: &mut ugli::Framebuffer,
+        position: Vec2<f32>,
+        size: f32,
+        text: &str,
+    ) {
+        let font = &self.assets.font;
+        let text_width = font.measure(text, size).width();
+        let position = self
+            .camera
+            .world_to_screen(framebuffer.size().map(|x| x as f32), position);
+        self.geng.draw_2d().quad(
+            framebuffer,
+            AABB::pos_size(
+                position - vec2(text_width / 2.0 + 5.0, 5.0),
+                vec2(text_width + 10.0, size + 10.0),
+            ),
+            Color::rgba(1.0, 1.0, 1.0, 0.7),
+        );
+        font.draw_aligned(framebuffer, text, position, 0.5, size, Color::BLACK);
     }
 }
 
 impl geng::State for GameState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.draw_impl(framebuffer);
-        let shop = self.model.shops.iter().find(|shop| {
-            AABB::pos_size(vec2(shop.position, 0.0) - self.player.size, vec2(2.0, 2.0))
-                .contains(self.player.position)
-        });
         self.ui_controller
             .draw(&mut self.ui_state.ui(), framebuffer);
     }
     fn update(&mut self, delta_time: f64) {
+        self.camera.update(delta_time as f32);
         self.ui_controller
             .update(&mut self.ui_state.ui(), delta_time);
         let mut messages = Vec::new();
