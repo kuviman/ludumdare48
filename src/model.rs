@@ -87,7 +87,7 @@ impl Player {
         self.jump_timer -= delta_time;
         let delta_position = velocity * delta_time;
         self.position.x += delta_position.x;
-        if self.collide(tiles, false) {
+        if self.collide(tiles, false, initial_position) {
             self.position.x = initial_position.x;
         }
         self.position.y += delta_position.y;
@@ -96,6 +96,7 @@ impl Player {
         if self.collide(
             tiles,
             self.position.y < initial_position.y && self.target_velocity.y >= 0.0,
+            initial_position,
         ) || on_platform && self.target_velocity.y >= 0.0
         {
             if self.position.y < initial_position.y {
@@ -106,7 +107,7 @@ impl Player {
             }
             self.position.y = initial_position.y;
         }
-        if self.collide(tiles, true) {
+        if self.collide(tiles, true, initial_position) {
             self.on_ground = true;
         }
         if self.position.x < initial_position.x {
@@ -119,10 +120,21 @@ impl Player {
             *swing += delta_time * Self::SWING_SPEED;
         }
     }
-    fn collide(&self, tiles: &TileMap, consider_climbable: bool) -> bool {
+    fn collide(
+        &self,
+        tiles: &TileMap,
+        consider_climbable: bool,
+        initial_position: Vec2<f32>,
+    ) -> bool {
         for position in self.tiles() {
             if let Some(tile) = tiles.get(&position) {
-                if !tile.can_move_through() {
+                if !tile.can_move_through()
+                    && !AABB::pos_size(
+                        position.map(|x| x as f32) - self.size,
+                        vec2(1.0, 1.0) + self.size,
+                    )
+                    .contains(initial_position)
+                {
                     return true;
                 }
                 if consider_climbable && tile.can_climb() {
