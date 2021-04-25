@@ -173,6 +173,7 @@ impl Player {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Copy)]
 pub enum Tile {
     Stone,
+    Dirt,
     Ladder,
     Block,
 }
@@ -232,7 +233,7 @@ impl Item {
 impl Tile {
     pub fn can_move_through(&self) -> bool {
         match self {
-            Self::Stone => false,
+            Self::Stone | Self::Dirt => false,
             Self::Ladder => true,
             Self::Block => false,
         }
@@ -246,13 +247,13 @@ impl Tile {
     pub fn transparent(&self) -> bool {
         match self {
             Self::Ladder => true,
-            Self::Stone => false,
+            Self::Stone | Self::Dirt => false,
             Self::Block => false,
         }
     }
     pub fn need_border(&self) -> bool {
         match self {
-            Self::Stone => true,
+            Self::Stone | Self::Dirt => true,
             Self::Ladder => false,
             Self::Block => true,
         }
@@ -316,7 +317,7 @@ impl Model {
                 let mut tiles = TileMap::new();
                 for x in -1000..=1000 {
                     for y in -1000..0 {
-                        tiles.insert(vec2(x, y), Tile::Stone);
+                        tiles.insert(vec2(x, y), if y == -1 { Tile::Dirt } else { Tile::Stone });
                     }
                 }
                 tiles
@@ -422,7 +423,8 @@ impl Model {
             Event::TileBroken(position) => {
                 if let Some(tile) = self.tiles.remove(&position) {
                     if let Some(events) = events {
-                        if global_rng().gen_bool(0.1) && tile == Tile::Stone {
+                        if global_rng().gen_bool(0.1) && (tile == Tile::Stone || tile == Tile::Dirt)
+                        {
                             let mut item = Item::new(
                                 &mut self.id_gen,
                                 position.map(|x| x as f32)

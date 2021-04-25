@@ -84,6 +84,8 @@ pub struct Assets {
     pub player: ugli::Texture,
     #[asset(path = "stone/*.png", range = "1..=6")]
     pub stone: Vec<ugli::Texture>,
+    #[asset(path = "dirt/*.png", range = "1..=6")]
+    pub dirt: Vec<ugli::Texture>,
     #[asset(path = "ladder/*.png", range = "1..=2")]
     pub ladder: Vec<ugli::Texture>,
     pub stick: ugli::Texture,
@@ -148,6 +150,7 @@ impl Assets {
             Tile::Stone => &self.stone,
             Tile::Ladder => &self.ladder,
             Tile::Block => &self.block,
+            Tile::Dirt => &self.dirt,
         }
     }
 }

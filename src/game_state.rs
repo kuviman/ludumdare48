@@ -868,7 +868,11 @@ impl GameState {
                     self.draw_random_tile(
                         framebuffer,
                         position,
-                        &self.assets.stone,
+                        if y == -1 {
+                            &self.assets.dirt
+                        } else {
+                            &self.assets.stone
+                        },
                         Color::GRAY,
                         100.0,
                     );
