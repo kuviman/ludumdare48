@@ -100,7 +100,16 @@ impl ConnectingState {
 
 impl geng::State for ConnectingState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        ugli::clear(framebuffer, Some(Color::GREEN), None);
+        let framebuffer_size = framebuffer.size();
+        ugli::clear(framebuffer, Some(Color::WHITE), None);
+        self.assets.font.draw_aligned(
+            framebuffer,
+            "Connecting to the server...",
+            framebuffer_size.map(|x| x as f32) / 2.0,
+            0.5,
+            40.0,
+            Color::BLACK,
+        );
     }
     fn update(&mut self, delta_time: f64) {}
     fn handle_event(&mut self, event: geng::Event) {
