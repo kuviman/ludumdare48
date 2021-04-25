@@ -130,6 +130,13 @@ impl Assets {
             ItemType::Ladder => &self.ladder_item,
         }
     }
+    pub fn tile_textures(&self, tile: Tile) -> &[ugli::Texture] {
+        match tile {
+            Tile::Stone => &self.stone,
+            Tile::Ladder => &self.ladder,
+            Tile::Block => &self.block,
+        }
+    }
 }
 
 #[derive(StructOpt)]

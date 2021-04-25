@@ -861,11 +861,7 @@ impl GameState {
                     self.draw_random_tile(
                         framebuffer,
                         position,
-                        match tile {
-                            Tile::Stone => &self.assets.stone,
-                            Tile::Ladder => &self.assets.ladder,
-                            Tile::Block => &self.assets.block,
-                        },
+                        self.assets.tile_textures(*tile),
                         if *tile == Tile::Block {
                             Color::rgb(0.8, 0.8, 0.8)
                         } else {
@@ -911,6 +907,32 @@ impl GameState {
                         &self.assets.border,
                         Color::BLACK,
                     );
+                }
+            }
+        }
+        if let Some(item) = &self.player.item {
+            let position = self
+                .camera
+                .screen_to_world(
+                    self.framebuffer_size,
+                    self.geng.window().mouse_pos().map(|x| x as f32),
+                )
+                .map(|x| x.floor() as i32);
+            if !self.model.tiles.contains_key(&position) {
+                if let Some(tile) = item.item_type.placed() {
+                    if ((self.player.position + self.player.size / 2.0)
+                        - position.map(|x| x as f32 + 0.5))
+                    .len()
+                        < Player::RANGE
+                    {
+                        self.draw_random_tile(
+                            framebuffer,
+                            position,
+                            self.assets.tile_textures(tile),
+                            Color::rgba(1.0, 1.0, 1.0, 0.5),
+                            0.0,
+                        );
+                    }
                 }
             }
         }
