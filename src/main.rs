@@ -104,6 +104,7 @@ pub struct Assets {
     pub house: ugli::Texture,
     pub train: ugli::Texture,
     pub leaderboard: ugli::Texture,
+    pub background: ugli::Texture,
     pub passport: ugli::Texture,
     #[asset(path = "music.mp3")]
     pub music: geng::Sound,

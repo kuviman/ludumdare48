@@ -727,6 +727,14 @@ impl GameState {
             self.camera.target_fov = 10.0;
         }
         ugli::clear(framebuffer, Some(Color::rgb(0.8, 0.8, 1.0)), None);
+        self.renderer.draw(
+            framebuffer,
+            &self.camera,
+            Mat4::translate(vec3(self.camera.center.x * 0.8 - 8.0, 0.0, 0.0))
+                * Mat4::scale(vec3(16.0, 8.0, 1.0)),
+            &self.assets.background,
+            Color::rgba(1.0, 1.0, 1.0, 0.5),
+        );
         const VIEW_RADIUS: i32 = 10;
         for shop in &self.model.shops {
             match shop.shop_type {
