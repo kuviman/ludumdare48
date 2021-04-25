@@ -1037,6 +1037,17 @@ impl geng::State for GameState {
             .entry(self.player.id)
             .or_default()
             .update(&self.player, delta_time);
+        for item in self.model.items.values_mut() {
+            let new_pos = vec2(item.position.x, item.position.y - delta_time * 5.0);
+            if self
+                .model
+                .tiles
+                .get(&new_pos.map(|x| x.floor() as i32))
+                .is_none()
+            {
+                item.position = new_pos;
+            }
+        }
     }
     fn handle_event(&mut self, event: geng::Event) {
         self.ui_controller.handle_event(
