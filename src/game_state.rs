@@ -1129,7 +1129,9 @@ impl geng::State for GameState {
                                     effect.play();
                                 }
                             }
-                            Event::TileBroken(position, ..) => {
+                            Event::TileBroken(position, ..)
+                                if self.model.tiles.contains_key(&position) =>
+                            {
                                 if (position.map(|x| x as f32) - self.player.position).len()
                                     < SOUND_RANGE
                                 {
