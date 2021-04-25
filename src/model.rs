@@ -89,10 +89,12 @@ impl Player {
         }
         self.position.y += delta_position.y;
         self.on_ground = false;
+        let on_platform = self.position.y.floor() == -1.0 && initial_position.y.floor() == 0.0;
         if self.collide(
             tiles,
             self.position.y < initial_position.y && self.target_velocity.y >= 0.0,
-        ) {
+        ) || on_platform && self.target_velocity.y >= 0.0
+        {
             if self.position.y < initial_position.y {
                 self.jump_timer = Self::JUMP_TIME;
                 self.on_ground = true;
