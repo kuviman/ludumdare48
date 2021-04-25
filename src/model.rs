@@ -306,10 +306,20 @@ impl Model {
                             &mut self.id_gen,
                             position.map(|x| x as f32)
                                 + vec2(global_rng().gen_range(0.0..1.0), 0.0),
-                            ItemType::random(),
+                            ItemType::Block,
                         ));
                         events.push(event.clone());
                         self.handle_impl(event, None);
+                        if global_rng().gen_bool(0.1) {
+                            let event = Event::ItemAdded(Item::new(
+                                &mut self.id_gen,
+                                position.map(|x| x as f32)
+                                    + vec2(global_rng().gen_range(0.0..1.0), 0.0),
+                                ItemType::Chest,
+                            ));
+                            events.push(event.clone());
+                            self.handle_impl(event, None);
+                        }
                     }
                 }
             }
