@@ -116,7 +116,7 @@ impl UiState {
             } else {
                 let mut column = ui::column(vec![]);
                 let mut players: Vec<_> = model
-                    .players
+                    .leaderboard
                     .values()
                     .map(|player| (player.money, &player.name))
                     .collect();

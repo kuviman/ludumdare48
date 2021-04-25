@@ -300,6 +300,7 @@ pub struct Model {
     pub items: HashMap<Id, Item>,
     pub tiles: TileMap,
     pub shops: Vec<Shop>,
+    pub leaderboard: HashMap<Id, Player>,
 }
 
 impl Model {
@@ -308,6 +309,7 @@ impl Model {
             id_gen: IdGen::new(),
             ticks_per_second: 20.0,
             players: default(),
+            leaderboard: default(),
             tiles: {
                 let mut tiles = TileMap::new();
                 for x in -100..=100 {
@@ -405,7 +407,8 @@ impl Model {
         match event {
             Event::PlayerJoined(player) | Event::PlayerUpdated(player) => {
                 let player_id = player.id;
-                self.players.insert(player_id, player);
+                self.players.insert(player_id, player.clone());
+                self.leaderboard.insert(player_id, player);
             }
             Event::PlayerLeft(player_id) => {
                 self.players.remove(&player_id);
