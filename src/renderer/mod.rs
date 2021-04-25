@@ -44,7 +44,7 @@ impl Renderer {
         texture: &ugli::Texture,
         color: Color<f32>,
     ) {
-        let camera_uniforms = camera.uniforms(framebuffer);
+        let camera_uniforms = camera.uniforms(framebuffer.size().map(|x| x as f32));
         let uniforms = (
             camera_uniforms,
             ugli::uniforms! {

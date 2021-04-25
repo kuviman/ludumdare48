@@ -31,10 +31,10 @@ pub struct GameState {
     players: HashMap<Id, PlayerState>,
     connection: Connection,
     left_click: Option<Vec2<f32>>,
-    right_click: Option<Vec2<f32>>,
     transition: Option<geng::Transition>,
     to_send: Vec<ClientMessage>,
     noise: noise::OpenSimplex,
+    framebuffer_size: Vec2<f32>,
 }
 
 impl GameState {
@@ -55,10 +55,10 @@ impl GameState {
             model: welcome.model,
             connection,
             left_click: None,
-            right_click: None,
             transition: None,
             to_send: Vec::new(),
             noise: noise::OpenSimplex::new(),
+            framebuffer_size: vec2(1.0, 1.0),
         }
     }
     fn draw_player_part(
@@ -260,6 +260,7 @@ impl GameState {
 
 impl geng::State for GameState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        self.framebuffer_size = framebuffer.size().map(|x| x as f32);
         self.camera.center = self.player.position;
         ugli::clear(framebuffer, Some(Color::rgb(0.8, 0.8, 1.0)), None);
         const VIEW_RADIUS: i32 = 10;
@@ -368,23 +369,11 @@ impl geng::State for GameState {
             .is_button_pressed(geng::MouseButton::Left)
         {
             self.left_click = Some(self.camera.screen_to_world(
-                framebuffer,
+                framebuffer.size().map(|x| x as f32),
                 self.geng.window().mouse_pos().map(|x| x as f32),
             ));
         } else {
             self.left_click = None;
-        }
-        if self
-            .geng
-            .window()
-            .is_button_pressed(geng::MouseButton::Right)
-        {
-            self.right_click = Some(self.camera.screen_to_world(
-                framebuffer,
-                self.geng.window().mouse_pos().map(|x| x as f32),
-            ));
-        } else {
-            self.right_click = None;
         }
     }
     fn update(&mut self, delta_time: f64) {
@@ -404,12 +393,6 @@ impl geng::State for GameState {
             messages_to_send.push(ClientMessage::Event(Event::PlayerUpdated(
                 self.player.clone(),
             )));
-            if let Some(position) = self.right_click {
-                messages_to_send.push(ClientMessage::Event(Event::TilePlaced(
-                    position.map(|x| x.floor() as i32),
-                    Tile::Block,
-                )));
-            }
         }
         for message in messages_to_send {
             match &mut self.connection {
@@ -483,6 +466,29 @@ impl geng::State for GameState {
                 }
                 _ => {}
             },
+            geng::Event::MouseDown {
+                button, position, ..
+            } => {
+                let position = self
+                    .camera
+                    .screen_to_world(self.framebuffer_size, position.map(|x| x as f32));
+                let position = position.map(|x| x.floor() as i32);
+                match button {
+                    geng::MouseButton::Right => {
+                        if let Some(item) = &self.player.item {
+                            if !self.model.tiles.contains_key(&position) {
+                                if let Some(tile) = item.item_type.placed() {
+                                    self.to_send.push(ClientMessage::Event(Event::TilePlaced(
+                                        position, tile,
+                                    )));
+                                    self.player.item = None;
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
             _ => {}
         }
     }

@@ -157,6 +157,13 @@ impl ItemType {
             _ => unreachable!(),
         }
     }
+    pub fn placed(&self) -> Option<Tile> {
+        match self {
+            Self::Block => Some(Tile::Block),
+            Self::Chest => None,
+            Self::Ladder => Some(Tile::Ladder),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
