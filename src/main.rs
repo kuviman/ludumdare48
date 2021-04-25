@@ -58,6 +58,26 @@ pub fn hsva(mut h: f32, s: f32, v: f32, a: f32) -> Color<f32> {
     Color::rgba(r, g, b, a)
 }
 
+#[derive(Deref)]
+pub struct Font {
+    #[deref]
+    inner: Rc<geng::Font>,
+}
+
+impl geng::LoadAsset for Font {
+    fn load(geng: &Rc<Geng>, path: &str) -> geng::AssetFuture<Self> {
+        let geng = geng.clone();
+        <Vec<u8> as geng::LoadAsset>::load(&geng, path)
+            .map(move |data| {
+                Ok(Font {
+                    inner: Rc::new(geng::Font::new(&geng, data?)?),
+                })
+            })
+            .boxed_local()
+    }
+    const DEFAULT_EXT: Option<&'static str> = Some("ttf");
+}
+
 #[derive(geng::Assets)]
 pub struct Assets {
     pub art: ugli::Texture,
@@ -97,6 +117,7 @@ pub struct Assets {
     pub mustache: Vec<ugli::Texture>,
     #[asset(path = "nose/*.png", range = "1..=4")]
     pub nose: Vec<ugli::Texture>,
+    pub font: Rc<Font>,
 }
 
 impl Assets {

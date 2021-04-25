@@ -16,6 +16,7 @@ impl PlayerState {
 }
 struct UiState {
     geng: Rc<Geng>,
+    assets: Rc<Assets>,
     volume_slider: geng::ui::Slider,
     volume: f64,
     skin_tone: f64,
@@ -46,10 +47,11 @@ impl UiState {
     fn locked(&self) -> bool {
         self.changing_name || self.customize_character
     }
-    fn new(geng: &Rc<Geng>, player: &Player) -> Self {
+    fn new(geng: &Rc<Geng>, assets: &Rc<Assets>, player: &Player) -> Self {
         let ui_theme = Rc::new(geng::ui::Theme::default(geng));
         Self {
             geng: geng.clone(),
+            assets: assets.clone(),
             volume_slider: geng::ui::Slider::new(&ui_theme),
             volume: 0.5,
             skin_tone: player.skin_tone,
@@ -79,7 +81,7 @@ impl UiState {
     fn ui<'a>(&'a mut self) -> impl geng::ui::Widget + 'a {
         use geng::ui;
         use geng::ui::*;
-        let font = self.geng.default_font();
+        let font: &Rc<geng::Font> = &self.assets.font;
         let volume = &mut self.volume;
         let mut stack = ui::stack![ui::row![
             geng::ui::Text::new("volume", font, 30.0, Color::WHITE).padding_right(30.0),
@@ -273,7 +275,7 @@ impl GameState {
             }
             None => welcome.model.players[&welcome.player_id].clone(),
         };
-        let ui_state = UiState::new(geng, &player);
+        let ui_state = UiState::new(geng, assets, &player);
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
@@ -509,9 +511,9 @@ impl GameState {
             }
             let pos = self.camera.world_to_screen(
                 framebuffer.size().map(|x| x as f32),
-                player.position + vec2(player.size.x / 2.0, player.size.y * 1.5),
+                player.position + vec2(player.size.x / 2.0, player.size.y * 2.0),
             );
-            let font = self.geng.default_font();
+            let font = &self.assets.font;
             let text_width = font.measure(&text, 30.0).width();
             self.geng.draw_2d().quad(
                 framebuffer,
@@ -806,7 +808,7 @@ impl GameState {
         } else {
             self.left_click = None;
         }
-        let font = self.geng.default_font();
+        let font = &self.assets.font;
         let text = self.player.money.to_string();
         self.geng.draw_2d().quad(
             framebuffer,
