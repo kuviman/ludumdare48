@@ -1148,6 +1148,9 @@ impl geng::State for GameState {
         }
         let delta_time = delta_time as f32;
         self.update_player(delta_time);
+        for player in self.model.players.values_mut() {
+            player.update(&self.model.tiles, delta_time);
+        }
 
         for player in self.model.players.values() {
             if player.id == self.player.id {
