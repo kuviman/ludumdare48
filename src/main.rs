@@ -32,6 +32,7 @@ pub struct Assets {
     pub leg: ugli::Texture,
     pub eyes: ugli::Texture,
     pub border: ugli::Texture,
+    pub grass: ugli::Texture,
 }
 
 #[derive(StructOpt)]

@@ -234,6 +234,9 @@ impl geng::State for GameState {
         ugli::clear(framebuffer, Some(Color::rgb(0.8, 0.8, 1.0)), None);
         const RADIUS: i32 = 10;
         for x in self.player.position.x as i32 - RADIUS..=self.player.position.x as i32 + RADIUS {
+            self.draw_tile(framebuffer, vec2(x, 0), &self.assets.grass, Color::WHITE);
+        }
+        for x in self.player.position.x as i32 - RADIUS..=self.player.position.x as i32 + RADIUS {
             for y in self.player.position.y as i32 - RADIUS..=self.player.position.y as i32 + RADIUS
             {
                 let position = vec2(x, y);
