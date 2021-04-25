@@ -910,6 +910,46 @@ impl GameState {
                 }
             }
         }
+        {
+            let position = self
+                .camera
+                .screen_to_world(
+                    self.framebuffer_size,
+                    self.geng.window().mouse_pos().map(|x| x as f32),
+                )
+                .map(|x| x.floor() as i32);
+            if ((self.player.position + self.player.size / 2.0) - position.map(|x| x as f32 + 0.5))
+                .len()
+                < Player::RANGE
+            {
+                if self.model.tiles.get(&position).is_some() {
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(
+                            position.x as f32 + 0.5,
+                            position.y as f32 + 0.5,
+                            0.0,
+                        )) * Mat4::rotate_z(f32::PI / 4.0)
+                            * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
+                        &self.assets.border,
+                        Color::rgba(0.0, 0.0, 0.0, 0.5),
+                    );
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(
+                            position.x as f32 + 0.5,
+                            position.y as f32 + 0.5,
+                            0.0,
+                        )) * Mat4::rotate_z(-f32::PI / 4.0)
+                            * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
+                        &self.assets.border,
+                        Color::rgba(0.0, 0.0, 0.0, 0.5),
+                    );
+                }
+            }
+        }
         if let Some(item) = &self.player.item {
             let position = self
                 .camera
