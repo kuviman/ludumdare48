@@ -107,6 +107,16 @@ pub struct Assets {
     pub passport: ugli::Texture,
     #[asset(path = "music.mp3")]
     pub music: geng::Sound,
+    #[asset(path = "dig.mp3")]
+    pub dig: geng::Sound,
+    #[asset(path = "place.mp3")]
+    pub place: geng::Sound,
+    #[asset(path = "jump.mp3")]
+    pub jump: geng::Sound,
+    #[asset(path = "money.mp3")]
+    pub money: geng::Sound,
+    #[asset(path = "change.mp3")]
+    pub change: geng::Sound,
     #[asset(path = "eye/*.png", range = "1..=4")]
     pub eye: Vec<ugli::Texture>,
     #[asset(path = "beard/*.png", range = "1..=4")]

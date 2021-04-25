@@ -44,6 +44,8 @@ struct UiState {
     leaderboard: bool,
 }
 
+const SOUND_RANGE: f32 = 5.0;
+
 impl UiState {
     fn locked(&self) -> bool {
         self.changing_name || self.customize_character || self.leaderboard
@@ -1117,6 +1119,27 @@ impl geng::State for GameState {
             match message {
                 ServerMessage::Update(events) => {
                     for event in events {
+                        match event {
+                            Event::TilePlaced(position, ..) => {
+                                if (position.map(|x| x as f32) - self.player.position).len()
+                                    < SOUND_RANGE
+                                {
+                                    let mut effect = self.assets.place.effect();
+                                    effect.set_volume(self.ui_state.volume);
+                                    effect.play();
+                                }
+                            }
+                            Event::TileBroken(position, ..) => {
+                                if (position.map(|x| x as f32) - self.player.position).len()
+                                    < SOUND_RANGE
+                                {
+                                    let mut effect = self.assets.dig.effect();
+                                    effect.set_volume(self.ui_state.volume);
+                                    effect.play();
+                                }
+                            }
+                            _ => {}
+                        }
                         self.model.handle(event);
                     }
                 }
@@ -1233,6 +1256,9 @@ impl geng::State for GameState {
                                 let item_id = item.id;
                                 self.player.item = None;
                                 if let Some(item_type) = give_item {
+                                    let mut effect = self.assets.change.effect();
+                                    effect.set_volume(self.ui_state.volume);
+                                    effect.play();
                                     self.player.item = Some(Item {
                                         id: item_id,
                                         position: self.player.position,
@@ -1240,6 +1266,9 @@ impl geng::State for GameState {
                                         value: 0,
                                     })
                                 } else {
+                                    let mut effect = self.assets.money.effect();
+                                    effect.set_volume(self.ui_state.volume);
+                                    effect.play();
                                     self.player.money += item.value;
                                 }
                             }
