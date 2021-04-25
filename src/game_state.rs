@@ -247,12 +247,17 @@ impl geng::State for GameState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.camera.center = self.player.position;
         ugli::clear(framebuffer, Some(Color::rgb(0.8, 0.8, 1.0)), None);
-        const RADIUS: i32 = 10;
-        for x in self.player.position.x as i32 - RADIUS..=self.player.position.x as i32 + RADIUS {
+        const VIEW_RADIUS: i32 = 10;
+        for x in self.player.position.x as i32 - VIEW_RADIUS
+            ..=self.player.position.x as i32 + VIEW_RADIUS
+        {
             self.draw_tile(framebuffer, vec2(x, 0), &self.assets.grass, Color::WHITE);
         }
-        for x in self.player.position.x as i32 - RADIUS..=self.player.position.x as i32 + RADIUS {
-            for y in self.player.position.y as i32 - RADIUS..=self.player.position.y as i32 + RADIUS
+        for x in self.player.position.x as i32 - VIEW_RADIUS
+            ..=self.player.position.x as i32 + VIEW_RADIUS
+        {
+            for y in self.player.position.y as i32 - VIEW_RADIUS
+                ..=self.player.position.y as i32 + VIEW_RADIUS
             {
                 let position = vec2(x, y);
                 let mut draw_background = true;
@@ -290,8 +295,11 @@ impl geng::State for GameState {
                 }
             }
         }
-        for x in self.player.position.x as i32 - RADIUS..=self.player.position.x as i32 + RADIUS {
-            for y in self.player.position.y as i32 - RADIUS..=self.player.position.y as i32 + RADIUS
+        for x in self.player.position.x as i32 - VIEW_RADIUS
+            ..=self.player.position.x as i32 + VIEW_RADIUS
+        {
+            for y in self.player.position.y as i32 - VIEW_RADIUS
+                ..=self.player.position.y as i32 + VIEW_RADIUS
             {
                 let position = vec2(x, y);
                 let current_tile = self.model.tiles.get(&position);
@@ -326,7 +334,11 @@ impl geng::State for GameState {
             }
         }
         for item in self.model.items.values() {
-            self.draw_item(framebuffer, item);
+            let delta_pos = item.position - self.player.position;
+            let distance = delta_pos.x.abs().max(delta_pos.y.abs());
+            if distance < VIEW_RADIUS as f32 {
+                self.draw_item(framebuffer, item);
+            }
         }
         self.draw_player(framebuffer, &self.player);
         for player in self.model.players.values() {
