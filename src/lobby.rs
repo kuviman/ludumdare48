@@ -33,6 +33,8 @@ impl geng::State for Lobby {
                         self.transition = Some(geng::Transition::Push(Box::new(GameState::new(
                             &self.geng,
                             &self.assets,
+                            &self.opt,
+                            None,
                             welcome,
                             Connection::Local {
                                 next_tick: 0.0,
@@ -42,7 +44,7 @@ impl geng::State for Lobby {
                     }
                     geng::Key::Num2 => {
                         self.transition = Some(geng::Transition::Push(Box::new(
-                            ConnectingState::new(&self.geng, &self.assets, &self.opt),
+                            ConnectingState::new(&self.geng, &self.assets, &self.opt, None),
                         )));
                     }
                     _ => {}
@@ -59,12 +61,19 @@ impl geng::State for Lobby {
 pub struct ConnectingState {
     geng: Rc<Geng>,
     assets: Rc<Assets>,
+    opt: Rc<Opt>,
+    player: Option<Player>,
     connection: Option<Pin<Box<dyn Future<Output = (WelcomeMessage, Connection)>>>>,
     transition: Option<geng::Transition>,
 }
 
 impl ConnectingState {
-    pub fn new(geng: &Rc<Geng>, assets: &Rc<Assets>, opt: &Rc<Opt>) -> Self {
+    pub fn new(
+        geng: &Rc<Geng>,
+        assets: &Rc<Assets>,
+        opt: &Rc<Opt>,
+        player: Option<Player>,
+    ) -> Self {
         let addr = format!("{}://{}", option_env!("WSS").unwrap_or("ws"), opt.addr());
         let connection = Box::pin(
             geng::net::client::connect(&addr)
@@ -81,6 +90,8 @@ impl ConnectingState {
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
+            opt: opt.clone(),
+            player,
             connection: Some(connection),
             transition: None,
         }
@@ -115,6 +126,8 @@ impl geng::State for ConnectingState {
                 return Some(geng::Transition::Switch(Box::new(GameState::new(
                     &self.geng,
                     &self.assets,
+                    &self.opt,
+                    self.player.take(),
                     welcome,
                     connection,
                 ))));

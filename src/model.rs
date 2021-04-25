@@ -229,11 +229,20 @@ impl Tile {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum ShopType {
+    House,
+    Train,
+    Sell {
+        require_item: ItemType,
+        give_item: Option<ItemType>,
+        needs_coin: bool,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Shop {
     pub position: f32,
-    pub require_item: ItemType,
-    pub give_item: Option<ItemType>,
-    pub needs_coin: bool,
+    pub shop_type: ShopType,
 }
 
 pub type TileMap = HashMap<Vec2<i32>, Tile>;
@@ -266,16 +275,28 @@ impl Model {
             items: default(),
             shops: vec![
                 Shop {
-                    position: -2.0,
-                    require_item: ItemType::Chest,
-                    give_item: None,
-                    needs_coin: false,
+                    position: 2.0,
+                    shop_type: ShopType::Sell {
+                        require_item: ItemType::Chest,
+                        give_item: None,
+                        needs_coin: false,
+                    },
                 },
                 Shop {
-                    position: 2.0,
-                    require_item: ItemType::Block,
-                    give_item: Some(ItemType::Ladder),
-                    needs_coin: true,
+                    position: 6.0,
+                    shop_type: ShopType::Sell {
+                        require_item: ItemType::Block,
+                        give_item: Some(ItemType::Ladder),
+                        needs_coin: true,
+                    },
+                },
+                Shop {
+                    position: -2.0,
+                    shop_type: ShopType::House,
+                },
+                Shop {
+                    position: -6.0,
+                    shop_type: ShopType::Train,
                 },
             ],
         }

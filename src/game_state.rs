@@ -26,6 +26,7 @@ impl Default for PlayerState {
 pub struct GameState {
     geng: Rc<Geng>,
     assets: Rc<Assets>,
+    opt: Rc<Opt>,
     camera: Camera,
     renderer: Renderer,
     model: Model,
@@ -39,17 +40,34 @@ pub struct GameState {
     framebuffer_size: Vec2<f32>,
 }
 
+impl Drop for GameState {
+    fn drop(&mut self) {
+        if let Connection::Remote(connection) = &mut self.connection {
+            connection.send(ClientMessage::Event(Event::PlayerLeft(self.player.id)));
+        }
+    }
+}
+
 impl GameState {
     pub fn new(
         geng: &Rc<Geng>,
         assets: &Rc<Assets>,
+        opt: &Rc<Opt>,
+        player: Option<Player>,
         welcome: WelcomeMessage,
         connection: Connection,
     ) -> Self {
-        let player = welcome.model.players[&welcome.player_id].clone();
+        let player = match player {
+            Some(mut player) => {
+                player.id = welcome.player_id;
+                player
+            }
+            None => welcome.model.players[&welcome.player_id].clone(),
+        };
         Self {
             geng: geng.clone(),
             assets: assets.clone(),
+            opt: opt.clone(),
             camera: Camera::new(10.0),
             renderer: Renderer::new(geng),
             player,
@@ -264,68 +282,92 @@ impl GameState {
             self.player.swing = None;
         }
     }
-}
 
-impl geng::State for GameState {
-    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+    fn draw_impl(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.framebuffer_size = framebuffer.size().map(|x| x as f32);
         self.camera.center = self.player.position;
         ugli::clear(framebuffer, Some(Color::rgb(0.8, 0.8, 1.0)), None);
         const VIEW_RADIUS: i32 = 10;
         for shop in &self.model.shops {
-            self.renderer.draw(
-                framebuffer,
-                &self.camera,
-                Mat4::translate(vec3(shop.position, 0.0, 0.0)) * Mat4::scale_uniform(2.0),
-                if shop.needs_coin {
-                    &self.assets.combine_shop
-                } else {
-                    &self.assets.sell_shop
-                },
-                Color::WHITE,
-            );
-            self.renderer.draw(
-                framebuffer,
-                &self.camera,
-                Mat4::translate(vec3(shop.position, 0.0, 0.0) + vec3(0.5, 1.5, 0.0))
-                    * Mat4::scale_uniform(0.5)
-                    * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
-                self.assets.item_texture(shop.require_item),
-                Color::WHITE,
-            );
-            let give_texture = match shop.give_item {
-                Some(item) => self.assets.item_texture(item),
-                None => &self.assets.coin,
-            };
-            if shop.needs_coin {
-                self.renderer.draw(
-                    framebuffer,
-                    &self.camera,
-                    Mat4::translate(vec3(shop.position, 0.0, 0.0) + vec3(1.5, 1.5, 0.0))
-                        * Mat4::scale_uniform(0.5)
-                        * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
-                    &self.assets.coin,
-                    Color::WHITE,
-                );
-                self.renderer.draw(
-                    framebuffer,
-                    &self.camera,
-                    Mat4::translate(vec3(shop.position, 0.0, 0.0) + vec3(1.5, 0.5, 0.0))
-                        * Mat4::scale_uniform(0.5)
-                        * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
-                    give_texture,
-                    Color::WHITE,
-                );
-            } else {
-                self.renderer.draw(
-                    framebuffer,
-                    &self.camera,
-                    Mat4::translate(vec3(shop.position, 0.0, 0.0) + vec3(1.5, 1.5, 0.0))
-                        * Mat4::scale_uniform(0.5)
-                        * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
-                    give_texture,
-                    Color::WHITE,
-                );
+            match shop.shop_type {
+                ShopType::Sell {
+                    needs_coin,
+                    give_item,
+                    require_item,
+                } => {
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(shop.position, 0.0, 0.0)) * Mat4::scale_uniform(2.0),
+                        if needs_coin {
+                            &self.assets.combine_shop
+                        } else {
+                            &self.assets.sell_shop
+                        },
+                        Color::WHITE,
+                    );
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(shop.position, 0.0, 0.0) + vec3(0.5, 1.5, 0.0))
+                            * Mat4::scale_uniform(0.5)
+                            * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
+                        self.assets.item_texture(require_item),
+                        Color::WHITE,
+                    );
+                    let give_texture = match give_item {
+                        Some(item) => self.assets.item_texture(item),
+                        None => &self.assets.coin,
+                    };
+                    if needs_coin {
+                        self.renderer.draw(
+                            framebuffer,
+                            &self.camera,
+                            Mat4::translate(vec3(shop.position, 0.0, 0.0) + vec3(1.5, 1.5, 0.0))
+                                * Mat4::scale_uniform(0.5)
+                                * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
+                            &self.assets.coin,
+                            Color::WHITE,
+                        );
+                        self.renderer.draw(
+                            framebuffer,
+                            &self.camera,
+                            Mat4::translate(vec3(shop.position, 0.0, 0.0) + vec3(1.5, 0.5, 0.0))
+                                * Mat4::scale_uniform(0.5)
+                                * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
+                            give_texture,
+                            Color::WHITE,
+                        );
+                    } else {
+                        self.renderer.draw(
+                            framebuffer,
+                            &self.camera,
+                            Mat4::translate(vec3(shop.position, 0.0, 0.0) + vec3(1.5, 1.5, 0.0))
+                                * Mat4::scale_uniform(0.5)
+                                * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
+                            give_texture,
+                            Color::WHITE,
+                        );
+                    }
+                }
+                ShopType::House => {
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(shop.position, 0.0, 0.0)) * Mat4::scale_uniform(2.0),
+                        &self.assets.house,
+                        Color::WHITE,
+                    );
+                }
+                ShopType::Train => {
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(shop.position, 0.0, 0.0)) * Mat4::scale_uniform(2.0),
+                        &self.assets.train,
+                        Color::WHITE,
+                    );
+                }
             }
         }
         for x in self.player.position.x as i32 - VIEW_RADIUS
@@ -457,6 +499,12 @@ impl geng::State for GameState {
         );
         font.draw(framebuffer, &text, vec2(150.0, 50.0), 100.0, Color::BLACK);
     }
+}
+
+impl geng::State for GameState {
+    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        self.draw_impl(framebuffer);
+    }
     fn update(&mut self, delta_time: f64) {
         let mut messages = Vec::new();
         match &mut self.connection {
@@ -522,24 +570,47 @@ impl geng::State for GameState {
                     self.transition = Some(geng::Transition::Pop);
                 }
                 geng::Key::E => {
-                    if let Some(item) = self.player.item.clone() {
-                        let shop = self.model.shops.iter().find(|shop| {
-                            AABB::pos_size(
-                                vec2(shop.position, 0.0) - self.player.size,
-                                vec2(2.0, 2.0),
-                            )
+                    let shop = self.model.shops.iter().find(|shop| {
+                        AABB::pos_size(vec2(shop.position, 0.0) - self.player.size, vec2(2.0, 2.0))
                             .contains(self.player.position)
+                    });
+                    if let Some(Shop {
+                        shop_type: ShopType::Train,
+                        ..
+                    }) = shop
+                    {
+                        self.transition = Some(match self.connection {
+                            Connection::Local { .. } => {
+                                geng::Transition::Push(Box::new(ConnectingState::new(
+                                    &self.geng,
+                                    &self.assets,
+                                    &self.opt,
+                                    Some(self.player.clone()),
+                                )))
+                            }
+                            Connection::Remote(_) => geng::Transition::Pop,
                         });
-                        if let Some(shop) = shop {
-                            if shop.require_item == item.item_type
-                                && (!shop.needs_coin || self.player.money > 0)
+                    }
+                    if let Some(item) = self.player.item.clone() {
+                        if let Some(&Shop {
+                            shop_type:
+                                ShopType::Sell {
+                                    require_item,
+                                    give_item,
+                                    needs_coin,
+                                },
+                            ..
+                        }) = shop
+                        {
+                            if require_item == item.item_type
+                                && (!needs_coin || self.player.money > 0)
                             {
-                                if shop.needs_coin {
+                                if needs_coin {
                                     self.player.money -= 1;
                                 }
                                 let item_id = item.id;
                                 self.player.item = None;
-                                if let Some(item_type) = shop.give_item {
+                                if let Some(item_type) = give_item {
                                     self.player.item = Some(Item {
                                         id: item_id,
                                         position: self.player.position,

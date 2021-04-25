@@ -11,7 +11,7 @@ pub mod server;
 
 pub use camera::*;
 pub use game_state::GameState;
-pub use lobby::Lobby;
+pub use lobby::*;
 pub use model::*;
 pub use net::*;
 pub use renderer::*;
@@ -41,6 +41,8 @@ pub struct Assets {
     pub sell_shop: ugli::Texture,
     pub combine_shop: ugli::Texture,
     pub coin: ugli::Texture,
+    pub house: ugli::Texture,
+    pub train: ugli::Texture,
 }
 
 impl Assets {
@@ -113,7 +115,20 @@ fn main() {
                 let geng = geng.clone();
                 move |assets| {
                     let assets = assets.unwrap();
-                    Lobby::new(&geng, Rc::new(assets), &opt)
+                    let mut model = Model::new();
+                    let (welcome, _) = model.welcome();
+                    GameState::new(
+                        &geng,
+                        &Rc::new(assets),
+                        &opt,
+                        None,
+                        welcome,
+                        Connection::Local {
+                            next_tick: 0.0,
+                            model,
+                        },
+                    )
+                    // Lobby::new(&geng, Rc::new(assets), &opt)
                 }
             }),
         );
