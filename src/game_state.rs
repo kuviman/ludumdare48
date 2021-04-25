@@ -334,7 +334,7 @@ impl GameState {
                 * Mat4::scale_uniform(Item::SIZE)
                 * Mat4::translate(vec3(-0.5, 0.0, 0.0)),
             self.assets.item_texture(item.item_type),
-            Color::WHITE,
+            item.item_type.color(),
         );
     }
     fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player) {
@@ -513,7 +513,7 @@ impl GameState {
                 false,
                 0.0,
                 0.3,
-                Color::WHITE,
+                item.item_type.color(),
             )
         }
         let changing_name = self.ui_state.changing_name && player.id == self.player.id;

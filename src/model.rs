@@ -185,6 +185,13 @@ pub enum ItemType {
 }
 
 impl ItemType {
+    pub fn color(&self) -> Color<f32> {
+        match self {
+            Self::Block => Color::rgb(0.8, 0.8, 0.8),
+            Self::Ladder => Color::WHITE,
+            Self::Chest => Color::rgb(0.7, 0.3, 0.0),
+        }
+    }
     pub fn random() -> Self {
         match global_rng().gen_range(0..3) {
             0 => Self::Block,
