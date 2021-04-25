@@ -1,7 +1,5 @@
 use super::*;
 
-pub const SERVER_ADDR: &str = "127.0.0.1:7897";
-
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ClientMessage {
     Event(Event),

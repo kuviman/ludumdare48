@@ -3,14 +3,16 @@ use super::*;
 pub struct Lobby {
     geng: Rc<Geng>,
     assets: Rc<Assets>,
+    opt: Rc<Opt>,
     transition: Option<geng::Transition>,
 }
 
 impl Lobby {
-    pub fn new(geng: &Rc<Geng>, assets: Rc<Assets>) -> Self {
+    pub fn new(geng: &Rc<Geng>, assets: Rc<Assets>, opt: &Rc<Opt>) -> Self {
         Self {
             geng: geng.clone(),
             assets,
+            opt: opt.clone(),
             transition: None,
         }
     }
@@ -23,28 +25,29 @@ impl geng::State for Lobby {
     fn update(&mut self, delta_time: f64) {}
     fn handle_event(&mut self, event: geng::Event) {
         match event {
-            geng::Event::KeyDown { key, .. } => match key {
-                geng::Key::Num1 => {
-                    let mut model = Model::new();
-                    let (welcome, _) = model.welcome();
-                    self.transition = Some(geng::Transition::Push(Box::new(GameState::new(
-                        &self.geng,
-                        &self.assets,
-                        welcome,
-                        Connection::Local {
-                            next_tick: 0.0,
-                            model,
-                        },
-                    ))));
+            geng::Event::KeyDown { key, .. } => {
+                match key {
+                    geng::Key::Num1 => {
+                        let mut model = Model::new();
+                        let (welcome, _) = model.welcome();
+                        self.transition = Some(geng::Transition::Push(Box::new(GameState::new(
+                            &self.geng,
+                            &self.assets,
+                            welcome,
+                            Connection::Local {
+                                next_tick: 0.0,
+                                model,
+                            },
+                        ))));
+                    }
+                    geng::Key::Num2 => {
+                        self.transition = Some(geng::Transition::Push(Box::new(
+                            ConnectingState::new(&self.geng, &self.assets, &self.opt),
+                        )));
+                    }
+                    _ => {}
                 }
-                geng::Key::Num2 => {
-                    self.transition = Some(geng::Transition::Push(Box::new(ConnectingState::new(
-                        &self.geng,
-                        &self.assets,
-                    ))));
-                }
-                _ => {}
-            },
+            }
             _ => {}
         }
     }
@@ -61,8 +64,8 @@ pub struct ConnectingState {
 }
 
 impl ConnectingState {
-    pub fn new(geng: &Rc<Geng>, assets: &Rc<Assets>) -> Self {
-        let addr = format!("{}://{}", option_env!("WSS").unwrap_or("ws"), SERVER_ADDR);
+    pub fn new(geng: &Rc<Geng>, assets: &Rc<Assets>, opt: &Rc<Opt>) -> Self {
+        let addr = format!("{}://{}", option_env!("WSS").unwrap_or("ws"), opt.addr());
         let connection = Box::pin(
             geng::net::client::connect(&addr)
                 .then(|connection| async move {

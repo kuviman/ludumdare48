@@ -1,5 +1,7 @@
 name: CI
 on: push
+env:
+  SERVER_ADDR: ${{ secrets.SERVER_ADDR }}
 
 jobs:
   build-web:

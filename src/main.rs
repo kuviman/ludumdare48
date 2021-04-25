@@ -32,11 +32,22 @@ pub struct Assets {
 }
 
 #[derive(StructOpt)]
-struct Opt {
+pub struct Opt {
+    #[structopt(long)]
+    addr: Option<String>,
     #[structopt(long)]
     server: bool,
     #[structopt(long)]
     with_server: bool,
+}
+
+impl Opt {
+    pub fn addr(&self) -> &str {
+        match &self.addr {
+            Some(addr) => addr,
+            None => option_env!("SERVER_ADDR").unwrap_or("127.0.0.1:1155"),
+        }
+    }
 }
 
 fn main() {
@@ -53,13 +64,14 @@ fn main() {
         }
     }
     let opt: Opt = StructOpt::from_args();
+    let opt = Rc::new(opt);
     if opt.server {
         #[cfg(not(target_arch = "wasm32"))]
-        Server::new(SERVER_ADDR, Model::new()).run();
+        Server::new(opt.addr(), Model::new()).run();
     } else {
         #[cfg(not(target_arch = "wasm32"))]
         let server = if opt.with_server {
-            let server = Server::new(SERVER_ADDR, Model::new());
+            let server = Server::new(opt.addr(), Model::new());
             let server_handle = server.handle();
             let server_thread = std::thread::spawn(move || {
                 server.run();
@@ -79,7 +91,7 @@ fn main() {
                 let geng = geng.clone();
                 move |assets| {
                     let assets = assets.unwrap();
-                    Lobby::new(&geng, Rc::new(assets))
+                    Lobby::new(&geng, Rc::new(assets), &opt)
                 }
             }),
         );
