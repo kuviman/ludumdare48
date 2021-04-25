@@ -38,6 +38,9 @@ pub struct Assets {
     pub block_item: ugli::Texture,
     pub ladder_item: ugli::Texture,
     pub chest: ugli::Texture,
+    pub sell_shop: ugli::Texture,
+    pub combine_shop: ugli::Texture,
+    pub coin: ugli::Texture,
 }
 
 impl Assets {

@@ -36,6 +36,7 @@ pub struct Player {
     pub looks_right: bool,
     pub swing: Option<f32>,
     pub item: Option<Item>,
+    pub money: usize,
 }
 
 impl Player {
@@ -55,6 +56,7 @@ impl Player {
             looks_right: true,
             swing: None,
             item: None,
+            money: 0,
         }
     }
     pub fn matrix(&self) -> Mat4<f32> {
@@ -226,6 +228,14 @@ impl Tile {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Shop {
+    pub position: f32,
+    pub require_item: ItemType,
+    pub give_item: Option<ItemType>,
+    pub needs_coin: bool,
+}
+
 pub type TileMap = HashMap<Vec2<i32>, Tile>;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -235,6 +245,7 @@ pub struct Model {
     pub players: HashMap<Id, Player>,
     pub items: HashMap<Id, Item>,
     pub tiles: TileMap,
+    pub shops: Vec<Shop>,
 }
 
 impl Model {
@@ -253,6 +264,20 @@ impl Model {
                 tiles
             },
             items: default(),
+            shops: vec![
+                Shop {
+                    position: -2.0,
+                    require_item: ItemType::Chest,
+                    give_item: None,
+                    needs_coin: false,
+                },
+                Shop {
+                    position: 2.0,
+                    require_item: ItemType::Block,
+                    give_item: Some(ItemType::Ladder),
+                    needs_coin: true,
+                },
+            ],
         }
     }
     #[must_use]
