@@ -319,6 +319,8 @@ const HELPS: &[&str] = &[
     "Use Q to drop items",
     "Use Right Mouse Button to place a block",
     "Dig deeper and deeper and you'll get more and more valuable treasure",
+    "By the way, music is bad on purpose",
+    "But at least ther IS music, right?",
 ];
 
 pub struct GameState {
@@ -339,6 +341,7 @@ pub struct GameState {
     ui_state: UiState,
     ui_controller: geng::ui::Controller,
     current_help: usize,
+    music: Option<geng::SoundEffect>,
 }
 
 impl Drop for GameState {
@@ -384,6 +387,7 @@ impl GameState {
             ui_state,
             ui_controller: geng::ui::Controller::new(),
             current_help: HELPS.len(),
+            music: None,
         }
     }
     fn draw_player_part(
@@ -1071,6 +1075,9 @@ impl geng::State for GameState {
         );
     }
     fn update(&mut self, delta_time: f64) {
+        if let Some(music) = &mut self.music {
+            music.set_volume(self.ui_state.volume * 0.3);
+        }
         self.camera.update(delta_time as f32);
         self.ui_controller.update(
             &mut self.ui_state.ui(&self.model, self.connection.is_local()),
@@ -1263,6 +1270,13 @@ impl geng::State for GameState {
             geng::Event::MouseDown {
                 button, position, ..
             } => {
+                if self.music.is_none() && self.connection.is_local() {
+                    self.music = Some({
+                        let mut music = self.assets.music.play();
+                        music.set_volume(0.2);
+                        music
+                    });
+                }
                 let position = self
                     .camera
                     .screen_to_world(self.framebuffer_size, position.map(|x| x as f32));

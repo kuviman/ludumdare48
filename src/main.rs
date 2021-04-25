@@ -105,6 +105,8 @@ pub struct Assets {
     pub train: ugli::Texture,
     pub leaderboard: ugli::Texture,
     pub passport: ugli::Texture,
+    #[asset(path = "music.mp3")]
+    pub music: geng::Sound,
     #[asset(path = "eye/*.png", range = "1..=4")]
     pub eye: Vec<ugli::Texture>,
     #[asset(path = "beard/*.png", range = "1..=4")]
@@ -198,7 +200,8 @@ fn main() {
             geng::LoadingScreen::new(&geng, geng::EmptyLoadingScreen, assets, {
                 let geng = geng.clone();
                 move |assets| {
-                    let assets = assets.unwrap();
+                    let mut assets = assets.unwrap();
+                    assets.music.looped = true;
                     let mut model = Model::new();
                     let (welcome, _) = model.welcome();
                     GameState::new(
