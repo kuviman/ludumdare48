@@ -41,11 +41,12 @@ struct UiState {
     nose_slider: geng::ui::Slider,
     customize_character: bool,
     changing_name: bool,
+    leaderboard: bool,
 }
 
 impl UiState {
     fn locked(&self) -> bool {
-        self.changing_name || self.customize_character
+        self.changing_name || self.customize_character || self.leaderboard
     }
     fn new(geng: &Rc<Geng>, assets: &Rc<Assets>, player: &Player) -> Self {
         let ui_theme = Rc::new(geng::ui::Theme::default(geng));
@@ -76,9 +77,10 @@ impl UiState {
             nose_slider: geng::ui::Slider::new(&ui_theme),
             customize_character: false,
             changing_name: false,
+            leaderboard: false,
         }
     }
-    fn ui<'a>(&'a mut self) -> impl geng::ui::Widget + 'a {
+    fn ui<'a>(&'a mut self, model: &'a Model, local: bool) -> impl geng::ui::Widget + 'a {
         use geng::ui;
         use geng::ui::*;
         let font: &Rc<geng::Font> = &self.assets.font;
@@ -96,6 +98,78 @@ impl UiState {
         .padding_right(50.0)
         .padding_bottom(50.0)
         .align(vec2(1.0, 0.0))];
+        if self.leaderboard {
+            if local {
+                stack.push(Box::new(
+                    geng::ui::stack![
+                        geng::ui::ColorBox::new(&self.geng, Color::rgba(1.0, 1.0, 1.0, 0.7)),
+                        geng::ui::Text::new(
+                            "This is single player world, use the train to play with other people",
+                            font,
+                            50.0,
+                            Color::BLACK
+                        )
+                        .uniform_padding(30.0),
+                    ]
+                    .align(vec2(0.5, 0.5)),
+                ));
+            } else {
+                let mut column = ui::column(vec![]);
+                let mut players: Vec<_> = model
+                    .players
+                    .values()
+                    .map(|player| (player.money, &player.name))
+                    .collect();
+                players.sort();
+                players.reverse();
+                column.push(Box::new(
+                    ui::row![
+                        geng::ui::Text::new("Rank", font, 30.0, Color::BLACK)
+                            .align(vec2(1.0, 0.0))
+                            .uniform_padding(10.0)
+                            .fixed_size(vec2(100.0, 50.0)),
+                        geng::ui::Text::new("Name", font, 30.0, Color::BLACK)
+                            .align(vec2(0.0, 0.0))
+                            .uniform_padding(10.0)
+                            .fixed_size(vec2(400.0, 50.0)),
+                        geng::ui::Text::new("Score", font, 30.0, Color::BLACK)
+                            .align(vec2(0.0, 0.0))
+                            .uniform_padding(10.0)
+                            .fixed_size(vec2(100.0, 50.0))
+                    ]
+                    .padding_bottom(50.0),
+                ));
+                for (index, (score, player)) in players.into_iter().take(10).enumerate() {
+                    column.push(Box::new(ui::stack![
+                        geng::ui::ColorBox::new(
+                            &self.geng,
+                            Color::rgba(1.0, 1.0, 1.0, if index % 2 == 0 { 0.9 } else { 0.0 }),
+                        ),
+                        ui::row![
+                            geng::ui::Text::new((index + 1).to_string(), font, 30.0, Color::BLACK)
+                                .align(vec2(1.0, 0.0))
+                                .uniform_padding(10.0)
+                                .fixed_size(vec2(60.0, 50.0)),
+                            geng::ui::Text::new(player, font, 30.0, Color::BLACK)
+                                .align(vec2(0.0, 0.0))
+                                .uniform_padding(10.0)
+                                .fixed_size(vec2(400.0, 50.0)),
+                            geng::ui::Text::new(score.to_string(), font, 30.0, Color::BLACK)
+                                .align(vec2(0.0, 0.0))
+                                .uniform_padding(10.0)
+                                .fixed_size(vec2(100.0, 50.0))
+                        ],
+                    ]));
+                }
+                stack.push(Box::new(
+                    geng::ui::stack![
+                        geng::ui::ColorBox::new(&self.geng, Color::rgba(1.0, 1.0, 1.0, 0.7)),
+                        column.uniform_padding(30.0),
+                    ]
+                    .align(vec2(0.5, 0.5)),
+                ));
+            }
+        }
         if self.customize_character {
             let mut column = ui::column(vec![]);
             let skin_tone = &mut self.skin_tone;
@@ -650,7 +724,7 @@ impl GameState {
                             * Mat4::scale_uniform(0.5)
                             * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
                         self.assets.item_texture(require_item),
-                        Color::WHITE,
+                        require_item.color(),
                     );
                     let give_texture = match give_item {
                         Some(item) => self.assets.item_texture(item),
@@ -683,7 +757,7 @@ impl GameState {
                                 * Mat4::scale_uniform(0.5)
                                 * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
                             give_texture,
-                            Color::WHITE,
+                            give_item.map(|item| item.color()).unwrap_or(Color::WHITE),
                         );
                     }
                 }
@@ -711,6 +785,15 @@ impl GameState {
                         &self.camera,
                         Mat4::translate(vec3(shop.position, 0.0, 0.0)) * Mat4::scale_uniform(2.0),
                         &self.assets.passport,
+                        Color::WHITE,
+                    );
+                }
+                ShopType::LeaderBoard => {
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(shop.position, 0.0, 0.0)) * Mat4::scale_uniform(2.0),
+                        &self.assets.leaderboard,
                         Color::WHITE,
                     );
                 }
@@ -887,13 +970,17 @@ impl GameState {
 impl geng::State for GameState {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.draw_impl(framebuffer);
-        self.ui_controller
-            .draw(&mut self.ui_state.ui(), framebuffer);
+        self.ui_controller.draw(
+            &mut self.ui_state.ui(&self.model, self.connection.is_local()),
+            framebuffer,
+        );
     }
     fn update(&mut self, delta_time: f64) {
         self.camera.update(delta_time as f32);
-        self.ui_controller
-            .update(&mut self.ui_state.ui(), delta_time);
+        self.ui_controller.update(
+            &mut self.ui_state.ui(&self.model, self.connection.is_local()),
+            delta_time,
+        );
         let mut messages = Vec::new();
         match &mut self.connection {
             Connection::Remote(connection) => messages.extend(connection.new_messages()),
@@ -952,8 +1039,10 @@ impl geng::State for GameState {
             .update(&self.player, delta_time);
     }
     fn handle_event(&mut self, event: geng::Event) {
-        self.ui_controller
-            .handle_event(&mut self.ui_state.ui(), event.clone());
+        self.ui_controller.handle_event(
+            &mut self.ui_state.ui(&self.model, self.connection.is_local()),
+            event.clone(),
+        );
         if let geng::Event::KeyDown { key, .. } = event {
             let c = format!("{:?}", key);
             if c.len() == 1 && self.ui_state.changing_name {
@@ -971,6 +1060,7 @@ impl geng::State for GameState {
                 geng::Key::Escape | geng::Key::Enter => {
                     self.ui_state.customize_character = false;
                     self.ui_state.changing_name = false;
+                    self.ui_state.leaderboard = false;
                 }
                 geng::Key::E => {
                     let shop = self.model.shops.iter().find(|shop| {
@@ -997,6 +1087,9 @@ impl geng::State for GameState {
                             }
                             ShopType::Passport => {
                                 self.ui_state.changing_name = true;
+                            }
+                            ShopType::LeaderBoard => {
+                                self.ui_state.leaderboard = true;
                             }
                             _ => {}
                         }

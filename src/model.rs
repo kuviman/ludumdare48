@@ -262,6 +262,7 @@ pub enum ShopType {
     House,
     Train,
     Passport,
+    LeaderBoard,
     Sell {
         require_item: ItemType,
         give_item: Option<ItemType>,
@@ -282,6 +283,7 @@ impl Shop {
             ShopType::Passport => "Press E to change your name",
             ShopType::Sell { .. } => "Press E to perform the deal",
             ShopType::Train => "Press E to travel to the other world",
+            ShopType::LeaderBoard => "Press E to view leader board",
         }
     }
 }
@@ -341,6 +343,10 @@ impl Model {
                 },
                 Shop {
                     position: -10.0,
+                    shop_type: ShopType::LeaderBoard,
+                },
+                Shop {
+                    position: -14.0,
                     shop_type: ShopType::Train,
                 },
             ],
