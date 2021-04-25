@@ -314,8 +314,8 @@ impl Model {
             leaderboard: default(),
             tiles: {
                 let mut tiles = TileMap::new();
-                for x in -100..=100 {
-                    for y in -100..0 {
+                for x in -1000..=1000 {
+                    for y in -1000..0 {
                         tiles.insert(vec2(x, y), Tile::Stone);
                     }
                 }
