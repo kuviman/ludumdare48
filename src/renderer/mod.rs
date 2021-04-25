@@ -42,6 +42,7 @@ impl Renderer {
         camera: &Camera,
         matrix: Mat4<f32>,
         texture: &ugli::Texture,
+        color: Color<f32>,
     ) {
         let camera_uniforms = camera.uniforms(framebuffer);
         let uniforms = (
@@ -49,6 +50,7 @@ impl Renderer {
             ugli::uniforms! {
                 u_model_matrix: matrix,
                 u_texture: texture,
+                u_color: color,
             },
         );
         ugli::draw(

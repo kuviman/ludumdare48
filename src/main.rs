@@ -22,8 +22,10 @@ pub use server::Server;
 pub struct Assets {
     pub art: ugli::Texture,
     pub player: ugli::Texture,
-    pub stone: ugli::Texture,
-    pub ladder: ugli::Texture,
+    #[asset(path = "stone/*.png", range = "1..=6")]
+    pub stone: Vec<ugli::Texture>,
+    #[asset(path = "ladder.png", range = "1..=1")]
+    pub ladder: Vec<ugli::Texture>,
     pub stick: ugli::Texture,
     pub pick_head: ugli::Texture,
     pub body: ugli::Texture,

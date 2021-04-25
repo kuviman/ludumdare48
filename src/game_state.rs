@@ -34,6 +34,7 @@ pub struct GameState {
     right_click: Option<Vec2<f32>>,
     transition: Option<geng::Transition>,
     to_send: Vec<ClientMessage>,
+    noise: noise::OpenSimplex,
 }
 
 impl GameState {
@@ -57,6 +58,7 @@ impl GameState {
             right_click: None,
             transition: None,
             to_send: Vec::new(),
+            noise: noise::OpenSimplex::new(),
         }
     }
     fn draw_player_part(
@@ -67,6 +69,7 @@ impl GameState {
         position: Vec2<f32>,
         flip_x: bool,
         rotation: f32,
+        color: Color<f32>,
     ) {
         self.renderer.draw(
             framebuffer,
@@ -79,6 +82,7 @@ impl GameState {
                 * Mat4::scale(vec3(if flip_x { -1.0 } else { 1.0 }, 1.0, 1.0))
                 * Mat4::translate(vec3(-0.5, -0.5, 0.0)),
             texture,
+            color,
         );
     }
     fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player) {
@@ -107,6 +111,7 @@ impl GameState {
             pick_position,
             false,
             pick_rotation - f32::PI / 4.0,
+            Color::WHITE,
         );
         self.draw_player_part(
             framebuffer,
@@ -115,6 +120,7 @@ impl GameState {
             pick_position,
             false,
             pick_rotation - f32::PI / 4.0,
+            Color::WHITE,
         );
         self.draw_player_part(
             framebuffer,
@@ -126,6 +132,7 @@ impl GameState {
             ),
             true,
             0.0,
+            Color::WHITE,
         );
         self.draw_player_part(
             framebuffer,
@@ -134,6 +141,7 @@ impl GameState {
             vec2(0.0, 0.0),
             false,
             0.0,
+            Color::WHITE,
         );
         self.draw_player_part(
             framebuffer,
@@ -142,6 +150,7 @@ impl GameState {
             vec2(0.0, leg_arg.sin().max(0.0) * leg_amp + leg_offset),
             false,
             0.0,
+            Color::WHITE,
         );
         self.draw_player_part(
             framebuffer,
@@ -150,6 +159,7 @@ impl GameState {
             vec2(0.0, 0.0),
             false,
             0.0,
+            Color::WHITE,
         );
     }
     fn draw_tile(
@@ -157,12 +167,14 @@ impl GameState {
         framebuffer: &mut ugli::Framebuffer,
         position: Vec2<i32>,
         texture: &ugli::Texture,
+        color: Color<f32>,
     ) {
         self.renderer.draw(
             framebuffer,
             &self.camera,
             Mat4::translate(position.map(|x| x as f32).extend(0.0)),
             &texture,
+            color,
         );
     }
     fn update_player(&mut self, delta_time: f32) {
@@ -206,12 +218,30 @@ impl geng::State for GameState {
             for y in self.player.position.y as i32 - RADIUS..=self.player.position.y as i32 + RADIUS
             {
                 let position = vec2(x, y);
+                let mut textures = None;
+                let mut color = Color::WHITE;
+                let mut noise_offset = 0.0;
                 if let Some(tile) = self.model.tiles.get(&position) {
-                    let texture = match tile {
+                    textures = Some(match tile {
                         Tile::Stone => &self.assets.stone,
                         Tile::Ladder => &self.assets.ladder,
-                    };
-                    self.draw_tile(framebuffer, position, texture);
+                    });
+                } else if y < 0 {
+                    textures = Some(&self.assets.stone);
+                    color = Color::GRAY;
+                    noise_offset = 100.0;
+                }
+                if let Some(textures) = textures {
+                    use noise::NoiseFn;
+                    let noise = self
+                        .noise
+                        .get([position.x as f64 + noise_offset, position.y as f64]);
+                    let noise = (noise / 0.544 + 1.0) / 2.0;
+                    let index = clamp(
+                        (noise * textures.len() as f64) as i32,
+                        0..=textures.len() as i32 - 1,
+                    ) as usize;
+                    self.draw_tile(framebuffer, position, &textures[index], color);
                 }
             }
         }
