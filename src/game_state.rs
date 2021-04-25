@@ -318,6 +318,7 @@ const HELPS: &[&str] = &[
     "Use E to pick up items",
     "Use Q to drop items",
     "Use Right Mouse Button to place a block",
+    "Dig deeper and deeper and you'll get more and more valuable treasure",
 ];
 
 pub struct GameState {
@@ -823,9 +824,6 @@ impl GameState {
                         &self.assets.info,
                         Color::WHITE,
                     );
-                    if let Some(text) = HELPS.get(self.current_help) {
-                        self.draw_text(framebuffer, vec2(1.0 + shop.position, 2.5), 30.0, text);
-                    }
                 }
             }
         }
@@ -1032,6 +1030,11 @@ impl GameState {
                     40.0,
                     shop.help(),
                 );
+                if matches!(shop.shop_type, ShopType::Info) {
+                    if let Some(text) = HELPS.get(self.current_help) {
+                        self.draw_text(framebuffer, vec2(1.0 + shop.position, 2.5), 30.0, text);
+                    }
+                }
             }
         }
     }
