@@ -252,6 +252,7 @@ impl Tile {
 pub enum ShopType {
     House,
     Train,
+    Passport,
     Sell {
         require_item: ItemType,
         give_item: Option<ItemType>,
@@ -316,6 +317,10 @@ impl Model {
                 },
                 Shop {
                     position: -6.0,
+                    shop_type: ShopType::Passport,
+                },
+                Shop {
+                    position: -10.0,
                     shop_type: ShopType::Train,
                 },
             ],

@@ -82,6 +82,7 @@ pub struct Assets {
     pub coin: ugli::Texture,
     pub house: ugli::Texture,
     pub train: ugli::Texture,
+    pub passport: ugli::Texture,
     #[asset(path = "eye/*.png", range = "1..=4")]
     pub eye: Vec<ugli::Texture>,
     #[asset(path = "beard/*.png", range = "1..=4")]

@@ -376,7 +376,7 @@ impl GameState {
             true,
             0.0,
             1.0,
-            Color::WHITE,
+            Color::GRAY,
         );
         let skin_color = hsv(
             6.0 / 255.0,
@@ -401,7 +401,7 @@ impl GameState {
             false,
             0.0,
             1.0,
-            Color::WHITE,
+            Color::GRAY,
         );
         if let Some(texture) = self.assets.eye.get(player.eye) {
             self.draw_player_part(
@@ -654,6 +654,15 @@ impl GameState {
                         &self.camera,
                         Mat4::translate(vec3(shop.position, 0.0, 0.0)) * Mat4::scale_uniform(2.0),
                         &self.assets.train,
+                        Color::WHITE,
+                    );
+                }
+                ShopType::Passport => {
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(shop.position, 0.0, 0.0)) * Mat4::scale_uniform(2.0),
+                        &self.assets.passport,
                         Color::WHITE,
                     );
                 }
