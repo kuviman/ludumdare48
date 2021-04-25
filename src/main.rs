@@ -33,6 +33,11 @@ pub struct Assets {
     pub eyes: ugli::Texture,
     pub border: ugli::Texture,
     pub grass: ugli::Texture,
+    #[asset(path = "block.png", range = "0..1")]
+    pub block: Vec<ugli::Texture>,
+    pub block_item: ugli::Texture,
+    pub ladder_item: ugli::Texture,
+    pub chest: ugli::Texture,
 }
 
 #[derive(StructOpt)]

@@ -135,6 +135,43 @@ impl Player {
 pub enum Tile {
     Stone,
     Ladder,
+    Block,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub enum ItemType {
+    Block,
+    Ladder,
+    Chest,
+}
+
+impl ItemType {
+    pub fn random() -> Self {
+        match global_rng().gen_range(0..3) {
+            0 => Self::Block,
+            1 => Self::Ladder,
+            2 => Self::Chest,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Item {
+    pub id: Id,
+    pub position: Vec2<f32>,
+    pub item_type: ItemType,
+}
+
+impl Item {
+    pub const SIZE: f32 = 0.5;
+    pub fn new(id_gen: &mut IdGen, position: Vec2<f32>, item_type: ItemType) -> Self {
+        Self {
+            id: id_gen.gen(),
+            position,
+            item_type,
+        }
+    }
 }
 
 impl Tile {
@@ -142,6 +179,7 @@ impl Tile {
         match self {
             Self::Stone => false,
             Self::Ladder => true,
+            Self::Block => false,
         }
     }
     pub fn can_climb(&self) -> bool {
@@ -154,12 +192,14 @@ impl Tile {
         match self {
             Self::Ladder => true,
             Self::Stone => false,
+            Self::Block => false,
         }
     }
     pub fn need_border(&self) -> bool {
         match self {
             Self::Stone => true,
             Self::Ladder => false,
+            Self::Block => true,
         }
     }
 }
@@ -171,6 +211,7 @@ pub struct Model {
     id_gen: IdGen,
     pub ticks_per_second: f64,
     pub players: HashMap<Id, Player>,
+    pub items: HashMap<Id, Item>,
     pub tiles: TileMap,
 }
 
@@ -189,6 +230,7 @@ impl Model {
                 }
                 tiles
             },
+            items: default(),
         }
     }
     #[must_use]
@@ -225,7 +267,7 @@ impl Model {
         let mut events = Vec::new();
         match message {
             ClientMessage::Event(event) => {
-                self.handle(event.clone());
+                self.handle_impl(event.clone(), Some(&mut events));
                 events.push(event);
             }
         }
@@ -236,6 +278,9 @@ impl Model {
         vec![]
     }
     pub fn handle(&mut self, event: Event) {
+        self.handle_impl(event, None);
+    }
+    pub fn handle_impl(&mut self, event: Event, events: Option<&mut Vec<Event>>) {
         match event {
             Event::PlayerJoined(player) | Event::PlayerUpdated(player) => {
                 let player_id = player.id;
@@ -245,12 +290,30 @@ impl Model {
                 self.players.remove(&player_id);
             }
             Event::TileBroken(position) => {
-                self.tiles.remove(&position);
+                if let Some(tile) = self.tiles.remove(&position) {
+                    if let Some(events) = events {
+                        let event = Event::ItemAdded(Item::new(
+                            &mut self.id_gen,
+                            position.map(|x| x as f32)
+                                + vec2(global_rng().gen_range(0.0..1.0), 0.0),
+                            ItemType::random(),
+                        ));
+                        events.push(event.clone());
+                        self.handle_impl(event, None);
+                    }
+                }
             }
             Event::TilePlaced(position, tile) => {
                 if !self.tiles.contains_key(&position) {
                     self.tiles.insert(position, tile);
                 }
+            }
+            Event::ItemAdded(item) => {
+                let item_id = item.id;
+                self.items.insert(item_id, item);
+            }
+            Event::ItemRemoved(id) => {
+                self.items.remove(&id);
             }
         }
     }
@@ -263,4 +326,6 @@ pub enum Event {
     PlayerLeft(Id),
     TileBroken(Vec2<i32>),
     TilePlaced(Vec2<i32>, Tile),
+    ItemAdded(Item),
+    ItemRemoved(Id),
 }

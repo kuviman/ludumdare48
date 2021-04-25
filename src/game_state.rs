@@ -85,6 +85,21 @@ impl GameState {
             color,
         );
     }
+    fn draw_item(&self, framebuffer: &mut ugli::Framebuffer, item: &Item) {
+        self.renderer.draw(
+            framebuffer,
+            &self.camera,
+            Mat4::translate(item.position.extend(0.0))
+                * Mat4::scale_uniform(Item::SIZE)
+                * Mat4::translate(vec3(-0.5, 0.0, 0.0)),
+            match item.item_type {
+                ItemType::Block => &self.assets.block_item,
+                ItemType::Chest => &self.assets.chest,
+                ItemType::Ladder => &self.assets.ladder_item,
+            },
+            Color::WHITE,
+        );
+    }
     fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player) {
         let state = if let Some(state) = self.players.get(&player.id) {
             state
@@ -263,8 +278,13 @@ impl geng::State for GameState {
                         match tile {
                             Tile::Stone => &self.assets.stone,
                             Tile::Ladder => &self.assets.ladder,
+                            Tile::Block => &self.assets.block,
                         },
-                        Color::WHITE,
+                        if *tile == Tile::Block {
+                            Color::rgb(0.8, 0.8, 0.8)
+                        } else {
+                            Color::WHITE
+                        },
                         0.0,
                     );
                 }
@@ -304,6 +324,9 @@ impl geng::State for GameState {
                     );
                 }
             }
+        }
+        for item in self.model.items.values() {
+            self.draw_item(framebuffer, item);
         }
         self.draw_player(framebuffer, &self.player);
         for player in self.model.players.values() {
@@ -357,7 +380,7 @@ impl geng::State for GameState {
             if let Some(position) = self.right_click {
                 messages_to_send.push(ClientMessage::Event(Event::TilePlaced(
                     position.map(|x| x.floor() as i32),
-                    Tile::Ladder,
+                    Tile::Block,
                 )));
             }
         }
