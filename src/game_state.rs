@@ -177,6 +177,25 @@ impl GameState {
             color,
         );
     }
+    fn draw_random_tile(
+        &self,
+        framebuffer: &mut ugli::Framebuffer,
+        position: Vec2<i32>,
+        textures: &[ugli::Texture],
+        color: Color<f32>,
+        noise_offset: f64,
+    ) {
+        use noise::NoiseFn;
+        let noise = self
+            .noise
+            .get([position.x as f64 + noise_offset, position.y as f64]);
+        let noise = (noise / 0.544 + 1.0) / 2.0;
+        let index = clamp(
+            (noise * textures.len() as f64) as i32,
+            0..=textures.len() as i32 - 1,
+        ) as usize;
+        self.draw_tile(framebuffer, position, &textures[index], color);
+    }
     fn update_player(&mut self, delta_time: f32) {
         self.player.target_velocity = vec2(0.0, 0.0);
         if self.geng.window().is_key_pressed(geng::Key::A) {
@@ -218,30 +237,68 @@ impl geng::State for GameState {
             for y in self.player.position.y as i32 - RADIUS..=self.player.position.y as i32 + RADIUS
             {
                 let position = vec2(x, y);
-                let mut textures = None;
-                let mut color = Color::WHITE;
-                let mut noise_offset = 0.0;
-                if let Some(tile) = self.model.tiles.get(&position) {
-                    textures = Some(match tile {
-                        Tile::Stone => &self.assets.stone,
-                        Tile::Ladder => &self.assets.ladder,
-                    });
-                } else if y < 0 {
-                    textures = Some(&self.assets.stone);
-                    color = Color::GRAY;
-                    noise_offset = 100.0;
+                let mut draw_background = true;
+                let current_tile = self.model.tiles.get(&position);
+                if let Some(tile) = current_tile {
+                    if !tile.transparent() {
+                        draw_background = false;
+                    }
                 }
-                if let Some(textures) = textures {
-                    use noise::NoiseFn;
-                    let noise = self
-                        .noise
-                        .get([position.x as f64 + noise_offset, position.y as f64]);
-                    let noise = (noise / 0.544 + 1.0) / 2.0;
-                    let index = clamp(
-                        (noise * textures.len() as f64) as i32,
-                        0..=textures.len() as i32 - 1,
-                    ) as usize;
-                    self.draw_tile(framebuffer, position, &textures[index], color);
+                if y < 0 && draw_background {
+                    self.draw_random_tile(
+                        framebuffer,
+                        position,
+                        &self.assets.stone,
+                        Color::GRAY,
+                        100.0,
+                    );
+                }
+                if let Some(tile) = current_tile {
+                    self.draw_random_tile(
+                        framebuffer,
+                        position,
+                        match tile {
+                            Tile::Stone => &self.assets.stone,
+                            Tile::Ladder => &self.assets.ladder,
+                        },
+                        Color::WHITE,
+                        0.0,
+                    );
+                }
+            }
+        }
+        for x in self.player.position.x as i32 - RADIUS..=self.player.position.x as i32 + RADIUS {
+            for y in self.player.position.y as i32 - RADIUS..=self.player.position.y as i32 + RADIUS
+            {
+                let position = vec2(x, y);
+                let current_tile = self.model.tiles.get(&position);
+                let right_tile = self.model.tiles.get(&(position + vec2(1, 0)));
+                let top_tile = self.model.tiles.get(&(position + vec2(0, 1)));
+                let current_need_border =
+                    current_tile.map(|tile| tile.need_border()).unwrap_or(false);
+                let right_need_border = right_tile.map(|tile| tile.need_border()).unwrap_or(false);
+                let top_need_border = top_tile.map(|tile| tile.need_border()).unwrap_or(false);
+                if current_tile != right_tile && (current_need_border || right_need_border) {
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(position.x as f32 + 0.5, position.y as f32, 0.0)),
+                        &self.assets.border,
+                        Color::BLACK,
+                    );
+                }
+                if current_tile != top_tile && (current_need_border || top_need_border) {
+                    self.renderer.draw(
+                        framebuffer,
+                        &self.camera,
+                        Mat4::translate(vec3(
+                            position.x as f32 + 1.0,
+                            position.y as f32 + 0.5,
+                            0.0,
+                        )) * Mat4::rotate_z(f32::PI / 2.0),
+                        &self.assets.border,
+                        Color::BLACK,
+                    );
                 }
             }
         }

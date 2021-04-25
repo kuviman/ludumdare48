@@ -24,13 +24,14 @@ pub struct Assets {
     pub player: ugli::Texture,
     #[asset(path = "stone/*.png", range = "1..=6")]
     pub stone: Vec<ugli::Texture>,
-    #[asset(path = "ladder.png", range = "1..=1")]
+    #[asset(path = "ladder/*.png", range = "1..=2")]
     pub ladder: Vec<ugli::Texture>,
     pub stick: ugli::Texture,
     pub pick_head: ugli::Texture,
     pub body: ugli::Texture,
     pub leg: ugli::Texture,
     pub eyes: ugli::Texture,
+    pub border: ugli::Texture,
 }
 
 #[derive(StructOpt)]

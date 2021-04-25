@@ -129,7 +129,7 @@ impl Player {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub enum Tile {
     Stone,
     Ladder,
@@ -146,6 +146,18 @@ impl Tile {
         match self {
             Self::Ladder => true,
             _ => false,
+        }
+    }
+    pub fn transparent(&self) -> bool {
+        match self {
+            Self::Ladder => true,
+            Self::Stone => false,
+        }
+    }
+    pub fn need_border(&self) -> bool {
+        match self {
+            Self::Stone => true,
+            Self::Ladder => false,
         }
     }
 }
