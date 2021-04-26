@@ -306,6 +306,8 @@ pub struct Model {
     pub leaderboard: HashMap<Id, Player>,
 }
 
+const WORLD_SIZE: i32 = 200;
+
 impl Model {
     pub fn new() -> Self {
         Self {
@@ -315,8 +317,8 @@ impl Model {
             leaderboard: default(),
             tiles: {
                 let mut tiles = TileMap::new();
-                for x in -1000..=1000 {
-                    for y in -1000..0 {
+                for x in -WORLD_SIZE..=WORLD_SIZE {
+                    for y in -WORLD_SIZE..0 {
                         tiles.insert(vec2(x, y), if y == -1 { Tile::Dirt } else { Tile::Stone });
                     }
                 }
